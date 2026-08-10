@@ -291,6 +291,8 @@ func buildDependencies(
 	deps.TripHandler = tripHandler.NewHandler(tripService)
 	if cfg.GoogleMaps.APIKey == "" {
 		log.Info("GOOGLE_MAPS_API_KEY unset; using mock Places/Directions adapters")
+	} else {
+		log.Info("GOOGLE_MAPS_API_KEY set; using Google Places (New) + Routes adapters")
 	}
 
 	// --- WebSocket real-time hub ---

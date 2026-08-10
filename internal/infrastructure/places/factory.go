@@ -5,10 +5,12 @@ import (
 )
 
 // NewClients returns Places + Directions clients.
-// When apiKey is empty, mock adapters are used (Google-shaped DTOs).
-// Non-empty key is reserved for the future Google adapter swap PR.
+// Empty apiKey → mock adapters. Non-empty → Google Places (New) + Routes API.
 func NewClients(apiKey string, cache places.PlaceCache) (places.PlacesClient, places.DirectionsClient) {
-	_ = apiKey // Google adapter not wired yet; mock keeps the Google response shape.
-	inner := NewMockPlacesClient()
-	return NewCachingPlacesClient(inner, cache), NewMockDirectionsClient()
+	if apiKey == "" {
+		inner := NewMockPlacesClient()
+		return NewCachingPlacesClient(inner, cache), NewMockDirectionsClient()
+	}
+	placesClient := NewCachingPlacesClient(NewGooglePlacesClient(apiKey), cache)
+	return placesClient, NewGoogleRoutesClient(apiKey)
 }

@@ -111,8 +111,16 @@ func mockPolyline(a, b places.LatLng) string {
 }
 
 func buildGoogleMapsURL(ordered []places.Place, mode string) string {
-	if mode == "" {
-		mode = "walking"
+	travel := "walking"
+	switch strings.ToUpper(strings.TrimSpace(mode)) {
+	case "DRIVE", "DRIVING", "CAR":
+		travel = "driving"
+	case "BICYCLE", "BIKE", "BICYCLING":
+		travel = "bicycling"
+	case "TRANSIT":
+		travel = "transit"
+	case "WALK", "WALKING":
+		travel = "walking"
 	}
 	origin := fmt.Sprintf("%f,%f", ordered[0].Location.Latitude, ordered[0].Location.Longitude)
 	dest := fmt.Sprintf("%f,%f", ordered[len(ordered)-1].Location.Latitude, ordered[len(ordered)-1].Location.Longitude)
@@ -125,7 +133,7 @@ func buildGoogleMapsURL(ordered []places.Place, mode string) string {
 	q.Set("api", "1")
 	q.Set("origin", origin)
 	q.Set("destination", dest)
-	q.Set("travelmode", strings.ToLower(mode))
+	q.Set("travelmode", travel)
 	if len(waypoints) > 0 {
 		q.Set("waypoints", strings.Join(waypoints, "|"))
 	}
