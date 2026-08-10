@@ -38,9 +38,24 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string):
   headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`${API_URL}${path}`, { ...init, headers });
+  const url = `${API_URL}${path}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { ...init, headers });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(`API erişilemedi (${url}): ${detail}`);
+  }
+
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: { message?: string; error?: string } | null = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(`API JSON değil (${res.status}): ${text.slice(0, 160)}`);
+    }
+  }
   if (!res.ok) {
     const msg = data?.message || data?.error || res.statusText;
     throw new Error(msg);
