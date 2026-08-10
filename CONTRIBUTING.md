@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to NavGo! This document provides guidelines and instructions for contributing.
 
-NavGo is AGPL-3.0 and derived from [masterfabric-go](https://github.com/gurkanfikretgunak/masterfabric-go). Keep [LICENSE](LICENSE) and [NOTICE](NOTICE) intact.
+NavGo follows the same no-root-LICENSE posture as [mlc-llm-monitoring](https://github.com/leventkok/mlc-llm-monitoring). Keep [NOTICE](NOTICE) intact.
 
 ## Code of Conduct
 
@@ -151,7 +151,7 @@ Examples:
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the AGPL v3.0 license.
+By contributing, you agree your contributions are submitted under the same terms as this repository (see NOTICE).
 
 ## Questions?
 

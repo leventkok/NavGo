@@ -61,8 +61,8 @@ type Dependencies struct {
 	GatewayPipeline *gateway.Pipeline
 
 	// Repos needed for middleware
-	OrgRepo        tenantRepo.OrgRepository
-	WorkspaceRepo  tenantRepo.WorkspaceRepository
+	OrgRepo       tenantRepo.OrgRepository
+	WorkspaceRepo tenantRepo.WorkspaceRepository
 }
 
 // New creates the root Chi router with all middleware and routes.
@@ -108,110 +108,111 @@ func New(deps Dependencies) *chi.Mux {
 				r.Use(middleware.TenantResolverWithWorkspace(deps.OrgRepo, deps.WorkspaceRepo))
 			}
 
-			// WebSocket endpoint (before gateway pipeline — upgrade requests are not HTTP proxy)
+			// WebSocket stays outside the gateway middleware group (chi forbids Use after routes).
 			if deps.RealtimeHandler != nil {
 				r.Get("/ws", deps.RealtimeHandler.Connect)
 			}
 
-			// Gateway pipeline (rate limiting, permission enforcement for managed endpoints)
-			// Must be applied before specific routes so it can handle dynamic endpoints
-			if deps.GatewayPipeline != nil {
-				r.Use(deps.GatewayPipeline.Enforce)
-			}
+			r.Group(func(r chi.Router) {
+				// Gateway pipeline (rate limiting, permission enforcement for managed endpoints)
+				if deps.GatewayPipeline != nil {
+					r.Use(deps.GatewayPipeline.Enforce)
+				}
 
-			// User routes
-			if deps.IAMHandler != nil {
-				r.Get("/me", deps.IAMHandler.GetMe)
-				r.With(maybeRequirePermission(deps.RBACService, "user:read")).Route("/users", func(r chi.Router) {
-					r.Get("/", deps.IAMHandler.ListUsers)
-					r.Get("/{id}", deps.IAMHandler.GetUser)
-				})
-				r.With(maybeRequirePermission(deps.RBACService, "user:write")).Post("/roles/assign", deps.IAMHandler.AssignRole)
-			}
-
-			// Organization routes
-			if deps.TenantHandler != nil {
-				r.Route("/organizations", func(r chi.Router) {
-					r.With(maybeRequirePermission(deps.RBACService, "org:write")).Post("/", deps.TenantHandler.CreateOrg)
-					r.With(maybeRequirePermission(deps.RBACService, "org:read")).Get("/", deps.TenantHandler.ListOrgs)
-					r.Route("/{orgId}", func(r chi.Router) {
-						r.With(maybeRequirePermission(deps.RBACService, "org:read")).Get("/", deps.TenantHandler.GetOrg)
-
-						// Apps under organization
-						r.Route("/apps", func(r chi.Router) {
-							r.With(maybeRequirePermission(deps.RBACService, "app:write")).Post("/", deps.TenantHandler.CreateApp)
-							r.With(maybeRequirePermission(deps.RBACService, "app:read")).Get("/", deps.TenantHandler.ListApps)
-							r.Route("/{appId}", func(r chi.Router) {
-								r.With(maybeRequirePermission(deps.RBACService, "app:read")).Get("/", deps.TenantHandler.GetApp)
-
-								// API keys under app
-								r.Route("/keys", func(r chi.Router) {
-									r.With(maybeRequirePermission(deps.RBACService, "app:write")).Post("/", deps.TenantHandler.CreateAPIKey)
-									r.With(maybeRequirePermission(deps.RBACService, "app:read")).Get("/", deps.TenantHandler.ListAPIKeys)
-									r.With(maybeRequirePermission(deps.RBACService, "app:write")).Delete("/{keyId}", deps.TenantHandler.RevokeAPIKey)
-								})
-
-								// Endpoints under app
-								if deps.APIMgmtHandler != nil {
-									r.Route("/endpoints", func(r chi.Router) {
-										r.With(maybeRequirePermission(deps.RBACService, "endpoint:write")).Post("/", deps.APIMgmtHandler.DefineEndpoint)
-										r.With(maybeRequirePermission(deps.RBACService, "endpoint:read")).Get("/", deps.APIMgmtHandler.ListEndpoints)
-										r.Route("/{endpointId}", func(r chi.Router) {
-											r.With(maybeRequirePermission(deps.RBACService, "endpoint:read")).Get("/", deps.APIMgmtHandler.GetEndpoint)
-											r.With(maybeRequirePermission(deps.RBACService, "endpoint:write")).Post("/retire", deps.APIMgmtHandler.RetireEndpoint)
-											r.With(maybeRequirePermission(deps.RBACService, "endpoint:write")).Post("/activate", deps.APIMgmtHandler.ActivateEndpoint)
-											r.With(maybeRequirePermission(deps.RBACService, "endpoint:write")).Put("/policy", deps.APIMgmtHandler.UpdatePolicy)
-											r.With(maybeRequirePermission(deps.RBACService, "endpoint:read")).Get("/policy", deps.APIMgmtHandler.GetPolicy)
-										})
-									})
-								}
-							})
-						})
-
-						// Workspaces under organization
-						r.Route("/workspaces", func(r chi.Router) {
-							r.With(maybeRequirePermission(deps.RBACService, "org:write")).Post("/", deps.TenantHandler.CreateWorkspace)
-							r.With(maybeRequirePermission(deps.RBACService, "org:read")).Get("/", deps.TenantHandler.ListWorkspaces)
-							r.Route("/{workspaceId}", func(r chi.Router) {
-								r.With(maybeRequirePermission(deps.RBACService, "org:write")).Put("/", deps.TenantHandler.UpdateWorkspace)
-							})
-						})
-
-						// Audit logs under organization
-						if deps.AuditHandler != nil {
-							r.With(maybeRequirePermission(deps.RBACService, "org:read")).Get("/audit-logs", deps.AuditHandler.ListByOrg)
-						}
+				// User routes
+				if deps.IAMHandler != nil {
+					r.Get("/me", deps.IAMHandler.GetMe)
+					r.With(maybeRequirePermission(deps.RBACService, "user:read")).Route("/users", func(r chi.Router) {
+						r.Get("/", deps.IAMHandler.ListUsers)
+						r.Get("/{id}", deps.IAMHandler.GetUser)
 					})
+					r.With(maybeRequirePermission(deps.RBACService, "user:write")).Post("/roles/assign", deps.IAMHandler.AssignRole)
+				}
+
+				// Organization routes
+				if deps.TenantHandler != nil {
+					r.Route("/organizations", func(r chi.Router) {
+						r.With(maybeRequirePermission(deps.RBACService, "org:write")).Post("/", deps.TenantHandler.CreateOrg)
+						r.With(maybeRequirePermission(deps.RBACService, "org:read")).Get("/", deps.TenantHandler.ListOrgs)
+						r.Route("/{orgId}", func(r chi.Router) {
+							r.With(maybeRequirePermission(deps.RBACService, "org:read")).Get("/", deps.TenantHandler.GetOrg)
+
+							// Apps under organization
+							r.Route("/apps", func(r chi.Router) {
+								r.With(maybeRequirePermission(deps.RBACService, "app:write")).Post("/", deps.TenantHandler.CreateApp)
+								r.With(maybeRequirePermission(deps.RBACService, "app:read")).Get("/", deps.TenantHandler.ListApps)
+								r.Route("/{appId}", func(r chi.Router) {
+									r.With(maybeRequirePermission(deps.RBACService, "app:read")).Get("/", deps.TenantHandler.GetApp)
+
+									// API keys under app
+									r.Route("/keys", func(r chi.Router) {
+										r.With(maybeRequirePermission(deps.RBACService, "app:write")).Post("/", deps.TenantHandler.CreateAPIKey)
+										r.With(maybeRequirePermission(deps.RBACService, "app:read")).Get("/", deps.TenantHandler.ListAPIKeys)
+										r.With(maybeRequirePermission(deps.RBACService, "app:write")).Delete("/{keyId}", deps.TenantHandler.RevokeAPIKey)
+									})
+
+									// Endpoints under app
+									if deps.APIMgmtHandler != nil {
+										r.Route("/endpoints", func(r chi.Router) {
+											r.With(maybeRequirePermission(deps.RBACService, "endpoint:write")).Post("/", deps.APIMgmtHandler.DefineEndpoint)
+											r.With(maybeRequirePermission(deps.RBACService, "endpoint:read")).Get("/", deps.APIMgmtHandler.ListEndpoints)
+											r.Route("/{endpointId}", func(r chi.Router) {
+												r.With(maybeRequirePermission(deps.RBACService, "endpoint:read")).Get("/", deps.APIMgmtHandler.GetEndpoint)
+												r.With(maybeRequirePermission(deps.RBACService, "endpoint:write")).Post("/retire", deps.APIMgmtHandler.RetireEndpoint)
+												r.With(maybeRequirePermission(deps.RBACService, "endpoint:write")).Post("/activate", deps.APIMgmtHandler.ActivateEndpoint)
+												r.With(maybeRequirePermission(deps.RBACService, "endpoint:write")).Put("/policy", deps.APIMgmtHandler.UpdatePolicy)
+												r.With(maybeRequirePermission(deps.RBACService, "endpoint:read")).Get("/policy", deps.APIMgmtHandler.GetPolicy)
+											})
+										})
+									}
+								})
+							})
+
+							// Workspaces under organization
+							r.Route("/workspaces", func(r chi.Router) {
+								r.With(maybeRequirePermission(deps.RBACService, "org:write")).Post("/", deps.TenantHandler.CreateWorkspace)
+								r.With(maybeRequirePermission(deps.RBACService, "org:read")).Get("/", deps.TenantHandler.ListWorkspaces)
+								r.Route("/{workspaceId}", func(r chi.Router) {
+									r.With(maybeRequirePermission(deps.RBACService, "org:write")).Put("/", deps.TenantHandler.UpdateWorkspace)
+								})
+							})
+
+							// Audit logs under organization
+							if deps.AuditHandler != nil {
+								r.With(maybeRequirePermission(deps.RBACService, "org:read")).Get("/audit-logs", deps.AuditHandler.ListByOrg)
+							}
+						})
+					})
+				}
+
+				// Audit logs by user
+				if deps.AuditHandler != nil {
+					r.With(maybeRequirePermission(deps.RBACService, "org:read")).Get("/users/{userId}/audit-logs", deps.AuditHandler.ListByUser)
+				}
+
+				// NavGo trip / places / routes (grounded itinerary)
+				if deps.TripHandler != nil {
+					r.Post("/places/search", deps.TripHandler.SearchPlaces)
+					r.Post("/routes/build", deps.TripHandler.BuildRoute)
+					r.Post("/trips/plan", deps.TripHandler.PlanDay)
+					r.Route("/itineraries", func(r chi.Router) {
+						r.Post("/", deps.TripHandler.SaveItinerary)
+						r.Get("/", deps.TripHandler.ListItineraries)
+						r.Get("/{id}", deps.TripHandler.GetItinerary)
+					})
+				}
+
+				// Catch-all handler for managed endpoints (must be last in the group)
+				// This allows the gateway pipeline to handle dynamic endpoints like /api/v1/products
+				// The gateway middleware will validate and return responses for managed endpoints
+				r.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
+					// Gateway middleware should have already handled this if it's a managed endpoint
+					// If we reach here, it means no endpoint was found, return 404
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusNotFound)
+					_, _ = w.Write([]byte(`{"error":"endpoint not found","code":404,"message":"No endpoint registered for this path. Define the endpoint first using POST /api/v1/organizations/{orgId}/apps/{appId}/endpoints"}`))
 				})
-			}
-
-			// Audit logs by user
-			if deps.AuditHandler != nil {
-				r.With(maybeRequirePermission(deps.RBACService, "org:read")).Get("/users/{userId}/audit-logs", deps.AuditHandler.ListByUser)
-			}
-
-			// NavGo trip / places / routes (grounded itinerary)
-			if deps.TripHandler != nil {
-				r.Post("/places/search", deps.TripHandler.SearchPlaces)
-				r.Post("/routes/build", deps.TripHandler.BuildRoute)
-				r.Post("/trips/plan", deps.TripHandler.PlanDay)
-				r.Route("/itineraries", func(r chi.Router) {
-					r.Post("/", deps.TripHandler.SaveItinerary)
-					r.Get("/", deps.TripHandler.ListItineraries)
-					r.Get("/{id}", deps.TripHandler.GetItinerary)
-				})
-			}
-
-			// Catch-all handler for managed endpoints (must be last in the group)
-			// This allows the gateway pipeline to handle dynamic endpoints like /api/v1/products
-			// The gateway middleware will validate and return responses for managed endpoints
-			r.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
-				// Gateway middleware should have already handled this if it's a managed endpoint
-				// If we reach here, it means no endpoint was found, return 404
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusNotFound)
-				_, _ = w.Write([]byte(`{"error":"endpoint not found","code":404,"message":"No endpoint registered for this path. Define the endpoint first using POST /api/v1/organizations/{orgId}/apps/{appId}/endpoints"}`))
-			})
+			}) // end gateway group
 		})
 	})
 
@@ -227,7 +228,7 @@ func New(deps Dependencies) *chi.Mux {
 			_, _ = w.Write([]byte(`{"error":"not found","code":404}`))
 			return
 		}
-		
+
 		// For /api/v1 paths, check if gateway pipeline already handled it
 		// If not, return 404 (gateway would have returned response if endpoint existed)
 		w.Header().Set("Content-Type", "application/json")

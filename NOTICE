@@ -1,11 +1,8 @@
 NavGo
-Copyright (C) 2026 NavGo contributors
 
-This product includes software developed from / derived from:
+This repository follows the same licensing posture as
+https://github.com/leventkok/mlc-llm-monitoring (no root LICENSE file).
 
-  masterfabric-go
-  Copyright (C) 2025 MasterFabric
+Portions of the Go platform structure were adapted from:
   https://github.com/gurkanfikretgunak/masterfabric-go
-
-Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
-See the LICENSE file for the full license text.
+  Copyright (C) MasterFabric — AGPL-3.0 upstream project.

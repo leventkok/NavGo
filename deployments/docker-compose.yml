@@ -12,7 +12,7 @@ services:
     ports:
       - "${DB_HOST_BIND:-127.0.0.1}:${DB_PORT:-5432}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - navgo_pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U navgo"]
       interval: 5s
@@ -25,7 +25,7 @@ services:
     ports:
       - "${REDIS_HOST_BIND:-127.0.0.1}:${REDIS_PORT:-6379}:6379"
     volumes:
-      - redisdata:/data
+      - navgo_redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -91,6 +91,6 @@ services:
         condition: service_healthy
 
 volumes:
-  pgdata:
-  redisdata:
+  navgo_pgdata:
+  navgo_redisdata:
   kafkadata:

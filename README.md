@@ -2,11 +2,10 @@
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![Go Version](https://img.shields.io/badge/go-1.26.4-00ADD8?logo=go)
-![License](https://img.shields.io/badge/license-AGPL--v3.0-green.svg)
 
 **NavGo** is a Go backend for grounded travel day-plans: Places search, day routes, and itinerary persistence. LLM inference runs on the client (browser web-llm demo / Flutter on-device MLC); this API stores decisions and proxies Maps data.
 
-Derived from [masterfabric-go](https://github.com/gurkanfikretgunak/masterfabric-go) (AGPL-3.0). See [NOTICE](NOTICE) and [LICENSE](LICENSE).
+Same licensing posture as [mlc-llm-monitoring](https://github.com/leventkok/mlc-llm-monitoring) (no root LICENSE). Platform patterns adapted from [masterfabric-go](https://github.com/gurkanfikretgunak/masterfabric-go) — see [NOTICE](NOTICE).
 
 ## Architecture
 
@@ -58,6 +57,23 @@ curl -s -X POST http://localhost:8080/api/v1/routes/build \
 
 Grounding contract: [docs/CLIENT_CONTRACT.md](docs/CLIENT_CONTRACT.md)
 
+### Web demo (Gemma in browser)
+
+```bash
+# Terminal A — API with CORS for Next.js
+$env:CORS_ALLOWED_ORIGINS="http://localhost:3000"
+$env:DB_HOST="127.0.0.1"
+go run ./cmd/server
+
+# Terminal B — web
+cd web
+npm install
+npm run dev
+```
+
+Open http://localhost:3000 → **Gemma 2B yükle** → prompt → **Günü planla**.  
+Requires WebGPU (Chrome/Edge). Docs: [web/README.md](web/README.md)
+
 ### MCP
 
 ```bash
@@ -84,4 +100,4 @@ See [docs/RENDER.md](docs/RENDER.md).
 
 ## License
 
-AGPL-3.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+No root LICENSE (same as [mlc-llm-monitoring](https://github.com/leventkok/mlc-llm-monitoring)). See [NOTICE](NOTICE).

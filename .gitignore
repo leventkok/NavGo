@@ -33,6 +33,11 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Node / Next.js
+web/node_modules/
+web/.next/
+web/out/
+
 # Vendor (optional)
 # vendor/
 
