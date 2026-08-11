@@ -5,17 +5,19 @@ Flutter client — product hierarchy inspired by [AURA](https://github.com/maste
 ## Product flow
 
 ```text
-Splash → Onboarding (welcome / name / travel style)
+Splash → Onboarding (welcome / name / tempo / interests / group / transport)
       → Shell tabs
           Plan  | Trips | Explore | Profile
 ```
+
+City/district comes from GPS (or manual fallback). Preferences bias Places queries and route `travel_mode`.
 
 | Tab | Role |
 |-----|------|
 | **Plan** | Prompt → grounded Places → route (BLoC) |
 | **Trips** | Saved itineraries (empty state for now) |
 | **Explore** | Area ideas |
-| **Profile** | Name, style, API base, reset onboarding |
+| **Profile** | Name, location, prefs, API base, reset onboarding |
 
 ## Packages
 

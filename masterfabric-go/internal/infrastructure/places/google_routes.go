@@ -97,30 +97,32 @@ func (c *GoogleRoutesClient) BuildRoute(ctx context.Context, req places.BuildRou
 		mids = append(mids, waypointFromPlace(resolved[i]))
 	}
 
-	body, _ := json.Marshal(routesRequest{
-		Origin:                   origin,
-		Destination:              dest,
-		Intermediates:            mids,
-		TravelMode:               mode,
-		OptimizeWaypointOrder:    req.OptimizeWaypointOrder && len(mids) > 0,
-		LanguageCode:             lang,
-		ComputeAlternativeRoutes: false,
-	})
-
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, routesURL, bytes.NewReader(body))
-	if err != nil {
-		return nil, domainErr.New(domainErr.ErrInternal, "failed to build routes request", err)
+	// Routes API rejects intermediate waypoints for TRANSIT. Day plans need
+	// multi-stop routing, so fall back to WALK for 3+ stops.
+	if mode == "TRANSIT" && len(resolved) > 2 {
+		mode = "WALK"
 	}
-	httpReq.GetBody = func() (io.ReadCloser, error) {
-		return io.NopCloser(bytes.NewReader(body)), nil
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("X-Goog-Api-Key", c.apiKey)
-	httpReq.Header.Set("X-Goog-FieldMask", routesFieldMask)
 
-	resp, raw, err := doGoogleRequest(ctx, c.http, httpReq)
+	optimize := req.OptimizeWaypointOrder && len(mids) > 0
+	if mode == "TRANSIT" {
+		optimize = false
+	}
+
+	resp, raw, err := c.computeRoutes(ctx, origin, dest, mids, mode, optimize, lang)
 	if err != nil {
-		return nil, domainErr.New(domainErr.ErrInternal, "routes request failed", err)
+		return nil, err
+	}
+	// BICYCLE sometimes has no network graph for a set of places — retry WALK.
+	if resp.StatusCode == http.StatusOK {
+		var probe routesResponse
+		if json.Unmarshal(raw, &probe) == nil && len(probe.Routes) == 0 && mode == "BICYCLE" {
+			mode = "WALK"
+			optimize = req.OptimizeWaypointOrder && len(mids) > 0
+			resp, raw, err = c.computeRoutes(ctx, origin, dest, mids, mode, optimize, lang)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 	if resp.StatusCode >= 300 {
 		return nil, domainErr.New(domainErr.ErrBadRequest, fmt.Sprintf("routes http %d: %s", resp.StatusCode, truncate(string(raw), 400)), nil)
@@ -129,6 +131,22 @@ func (c *GoogleRoutesClient) BuildRoute(ctx context.Context, req places.BuildRou
 	var parsed routesResponse
 	if err := json.Unmarshal(raw, &parsed); err != nil {
 		return nil, domainErr.New(domainErr.ErrInternal, "routes decode failed", err)
+	}
+	if len(parsed.Routes) == 0 {
+		if mode != "WALK" {
+			mode = "WALK"
+			optimize = req.OptimizeWaypointOrder && len(mids) > 0
+			resp, raw, err = c.computeRoutes(ctx, origin, dest, mids, mode, optimize, lang)
+			if err != nil {
+				return nil, err
+			}
+			if resp.StatusCode >= 300 {
+				return nil, domainErr.New(domainErr.ErrBadRequest, fmt.Sprintf("routes http %d: %s", resp.StatusCode, truncate(string(raw), 400)), nil)
+			}
+			if err := json.Unmarshal(raw, &parsed); err != nil {
+				return nil, domainErr.New(domainErr.ErrInternal, "routes decode failed", err)
+			}
+		}
 	}
 	if len(parsed.Routes) == 0 {
 		return nil, domainErr.New(domainErr.ErrNotFound, "no route found", nil)
@@ -208,6 +226,42 @@ func (c *GoogleRoutesClient) BuildRoute(ctx context.Context, req places.BuildRou
 		Status:           "OK",
 		Provider:         "google",
 	}, nil
+}
+
+func (c *GoogleRoutesClient) computeRoutes(
+	ctx context.Context,
+	origin, dest routesWaypoint,
+	mids []routesWaypoint,
+	mode string,
+	optimize bool,
+	lang string,
+) (*http.Response, []byte, error) {
+	body, _ := json.Marshal(routesRequest{
+		Origin:                   origin,
+		Destination:              dest,
+		Intermediates:            mids,
+		TravelMode:               mode,
+		OptimizeWaypointOrder:    optimize,
+		LanguageCode:             lang,
+		ComputeAlternativeRoutes: false,
+	})
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, routesURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, nil, domainErr.New(domainErr.ErrInternal, "failed to build routes request", err)
+	}
+	httpReq.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(body)), nil
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("X-Goog-Api-Key", c.apiKey)
+	httpReq.Header.Set("X-Goog-FieldMask", routesFieldMask)
+
+	resp, raw, err := doGoogleRequest(ctx, c.http, httpReq)
+	if err != nil {
+		return nil, nil, domainErr.New(domainErr.ErrInternal, "routes request failed", err)
+	}
+	return resp, raw, nil
 }
 
 func waypointFromPlace(p places.Place) routesWaypoint {

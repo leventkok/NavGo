@@ -69,12 +69,13 @@ class PlannerService {
   Future<RouteModel> buildRoute({
     required String token,
     required List<String> placeIds,
+    String travelMode = 'WALK',
   }) async {
     final res = await _dio.post(
       '/api/v1/routes/build',
       data: {
         'place_ids': placeIds,
-        'travel_mode': 'WALK',
+        'travel_mode': travelMode,
         'optimize_waypoint_order': true,
         'language': 'tr',
       },

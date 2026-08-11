@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
 
-ThemeData appThemeLight() {
-  final base = GoogleFonts.interTextTheme();
+/// Built once. Avoids GoogleFonts runtime fetch (common ANR / stuck splash on emulators).
+final ThemeData navGoThemeLight = _buildAppThemeLight();
+
+ThemeData _buildAppThemeLight() {
   final colorScheme = ColorScheme.light(
     primary: AppColors.primary,
     onPrimary: AppColors.onPrimary,
@@ -13,6 +14,16 @@ ThemeData appThemeLight() {
     surface: AppColors.surface,
     onSurface: AppColors.secondary,
     error: AppColors.danger,
+  );
+
+  final base = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    colorScheme: colorScheme,
+    scaffoldBackgroundColor: AppColors.background,
+  ).textTheme.apply(
+    bodyColor: AppColors.secondary,
+    displayColor: AppColors.secondary,
   );
 
   return ThemeData(
@@ -58,13 +69,16 @@ ThemeData appThemeLight() {
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+        ),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surfaceMuted,
-      hintStyle: GoogleFonts.inter(color: AppColors.neutral),
+      hintStyle: TextStyle(color: AppColors.neutral),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,

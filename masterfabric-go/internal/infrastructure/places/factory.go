@@ -9,8 +9,8 @@ import (
 func NewClients(apiKey string, cache places.PlaceCache) (places.PlacesClient, places.DirectionsClient) {
 	if apiKey == "" {
 		inner := NewMockPlacesClient()
-		return NewCachingPlacesClient(inner, cache), NewMockDirectionsClient()
+		return NewCachingPlacesClient(inner, cache, "mock"), NewMockDirectionsClient()
 	}
-	placesClient := NewCachingPlacesClient(NewGooglePlacesClient(apiKey), cache)
+	placesClient := NewCachingPlacesClient(NewGooglePlacesClient(apiKey), cache, "google")
 	return placesClient, NewGoogleRoutesClient(apiKey)
 }

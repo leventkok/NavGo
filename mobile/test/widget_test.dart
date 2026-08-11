@@ -16,7 +16,7 @@ void main() {
     await tester.pumpWidget(App(router: router));
     expect(find.text('NavGo'), findsWidgets);
 
-    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
     expect(find.text('Devam'), findsOneWidget);
   });

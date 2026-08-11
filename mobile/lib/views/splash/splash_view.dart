@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
+import 'package:navgo_mobile/core/widgets/primary_button.dart';
 import 'package:navgo_mobile/data/session_repository.dart';
 
 class SplashView extends StatefulWidget {
@@ -14,19 +17,45 @@ class SplashView extends StatefulWidget {
 }
 
 class _SplashViewState extends State<SplashView> {
+  var _navigated = false;
+  var _showContinue = false;
+  Timer? _bootTimer;
+  Timer? _failsafeTimer;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _boot());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _bootTimer = Timer(const Duration(milliseconds: 600), _goNext);
+      _failsafeTimer = Timer(const Duration(milliseconds: 1800), () {
+        if (!mounted || _navigated) return;
+        setState(() => _showContinue = true);
+        // One more automatic attempt if the first schedule was starved.
+        _goNext();
+      });
+    });
   }
 
-  Future<void> _boot() async {
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    if (widget.session.onboardingComplete) {
-      context.go('/plan');
-    } else {
-      context.go('/onboarding');
+  @override
+  void dispose() {
+    _bootTimer?.cancel();
+    _failsafeTimer?.cancel();
+    super.dispose();
+  }
+
+  void _goNext() {
+    if (_navigated || !mounted) return;
+    _navigated = true;
+    final next = widget.session.onboardingComplete
+        ? '/plan'
+        : '/onboarding';
+    debugPrint('Splash → $next');
+    try {
+      GoRouter.of(context).go(next);
+    } catch (e, st) {
+      debugPrint('Splash navigate failed: $e\n$st');
+      _navigated = false;
+      if (mounted) setState(() => _showContinue = true);
     }
   }
 
@@ -34,17 +63,33 @@ class _SplashViewState extends State<SplashView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('NavGo', style: context.textTheme.headlineLarge),
-            const SizedBox(height: 8),
-            Text(
-              'Grounded day plans',
-              style: context.textTheme.bodyMedium,
-            ),
-          ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              const Spacer(),
+              Text('NavGo', style: context.textTheme.headlineLarge),
+              const SizedBox(height: 8),
+              Text(
+                'Grounded day plans',
+                style: context.textTheme.bodyMedium,
+              ),
+              const Spacer(),
+              if (_showContinue)
+                PrimaryButton(
+                  label: 'Devam',
+                  onPressed: _goNext,
+                )
+              else
+                const SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
     );

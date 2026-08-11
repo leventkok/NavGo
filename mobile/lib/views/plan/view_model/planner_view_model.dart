@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:navgo_mobile/core/enums/view_status.dart';
 import 'package:navgo_mobile/core/models/place_model.dart';
@@ -61,7 +62,7 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
         token: token,
         area: event.area,
         query: event.query,
-        maxResults: 5,
+        maxResults: event.maxResults,
       );
       if (places.length < 2) {
         throw Exception('Yeterli grounded mekan yok');
@@ -77,6 +78,7 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
       final route = await _service.buildRoute(
         token: token,
         placeIds: places.map((p) => p.placeId).toList(),
+        travelMode: event.travelMode,
       );
 
       emit(
@@ -88,11 +90,20 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
         ),
       );
     } catch (e) {
+      var message = e.toString().replaceFirst('Exception: ', '');
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map && data['message'] != null) {
+          message = data['message'].toString();
+        } else if (e.message != null && e.message!.isNotEmpty) {
+          message = e.message!;
+        }
+      }
       emit(
         state.copyWith(
           status: ViewStatus.failure,
           phase: PlannerPhase.home,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: message,
           statusMessage: '',
         ),
       );

@@ -16,23 +16,29 @@ const defaultSearchTTL = 6 * time.Hour
 
 // CachingPlacesClient wraps a PlacesClient with PlaceCache (pgvector-backed).
 type CachingPlacesClient struct {
-	inner places.PlacesClient
-	cache places.PlaceCache
-	ttl   time.Duration
+	inner    places.PlacesClient
+	cache    places.PlaceCache
+	ttl      time.Duration
+	provider string // "mock" | "google" — included in cache keys
 }
 
-func NewCachingPlacesClient(inner places.PlacesClient, cache places.PlaceCache) *CachingPlacesClient {
-	return &CachingPlacesClient{inner: inner, cache: cache, ttl: defaultSearchTTL}
+func NewCachingPlacesClient(inner places.PlacesClient, cache places.PlaceCache, provider string) *CachingPlacesClient {
+	if provider == "" {
+		provider = "unknown"
+	}
+	return &CachingPlacesClient{inner: inner, cache: cache, ttl: defaultSearchTTL, provider: provider}
 }
 
 func (c *CachingPlacesClient) Search(ctx context.Context, req places.SearchRequest) (*places.SearchResponse, error) {
-	hash := searchHash(req)
+	hash := searchHash(c.provider, req)
 	if cached, ok, err := c.cache.GetSearch(ctx, hash); err == nil && ok {
-		return &places.SearchResponse{
-			Places:   cached,
-			CacheHit: true,
-			Provider: "cache",
-		}, nil
+		if c.usableCachedPlaces(cached) {
+			return &places.SearchResponse{
+				Places:   cached,
+				CacheHit: true,
+				Provider: c.provider + "+cache",
+			}, nil
+		}
 	}
 
 	resp, err := c.inner.Search(ctx, req)
@@ -51,13 +57,22 @@ func (c *CachingPlacesClient) Search(ctx context.Context, req places.SearchReque
 	}
 	_ = c.cache.PutSearch(ctx, hash, req.Area, resp.Places, int(c.ttl.Seconds()))
 	resp.CacheHit = false
+	if resp.Provider == "" {
+		resp.Provider = c.provider
+	}
 	return resp, nil
 }
 
 func (c *CachingPlacesClient) GetByPlaceID(ctx context.Context, placeID string) (*places.Place, error) {
+	// Never serve fixture IDs from cache when wired to Google Routes.
+	if c.provider == "google" && isFixturePlaceID(placeID) {
+		return c.inner.GetByPlaceID(ctx, placeID)
+	}
 	if cp, ok, err := c.cache.GetPlace(ctx, placeID); err == nil && ok {
-		p := cp.Place
-		return &p, nil
+		if c.provider != "google" || !isFixturePlaceID(cp.PlaceID) {
+			p := cp.Place
+			return &p, nil
+		}
 	}
 	p, err := c.inner.GetByPlaceID(ctx, placeID)
 	if err != nil {
@@ -73,8 +88,33 @@ func (c *CachingPlacesClient) GetByPlaceID(ctx context.Context, placeID string) 
 	return p, nil
 }
 
-func searchHash(req places.SearchRequest) string {
-	raw := fmt.Sprintf("%s|%s|%s|%d|%.5f|%.5f|%d",
+func (c *CachingPlacesClient) usableCachedPlaces(list []places.Place) bool {
+	if len(list) == 0 {
+		return false
+	}
+	if c.provider != "google" {
+		return true
+	}
+	for _, p := range list {
+		if isFixturePlaceID(p.PlaceID) {
+			return false
+		}
+	}
+	return true
+}
+
+// Fixture IDs from MockPlacesClient (e.g. ChIJkaleici_hadrian_gate).
+func isFixturePlaceID(id string) bool {
+	id = strings.ToLower(strings.TrimSpace(id))
+	return strings.Contains(id, "kaleici") ||
+		strings.HasPrefix(id, "chijkaleici_") ||
+		strings.Contains(id, "_hadrian_") ||
+		strings.Contains(id, "_antalya_")
+}
+
+func searchHash(provider string, req places.SearchRequest) string {
+	raw := fmt.Sprintf("%s|%s|%s|%s|%d|%.5f|%.5f|%d",
+		provider,
 		strings.ToLower(strings.TrimSpace(req.Query)),
 		strings.ToLower(strings.TrimSpace(req.Area)),
 		strings.ToLower(strings.TrimSpace(req.Language)),
