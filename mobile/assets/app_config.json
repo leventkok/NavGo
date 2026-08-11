@@ -1,0 +1,80 @@
+{
+  "appSettings": {
+    "appName": "NavGo",
+    "version": "0.1.0",
+    "environment": "development",
+    "debugMode": true,
+    "maintenanceMode": false,
+    "minSupportedVersion": "0.1.0"
+  },
+  "uiConfiguration": {
+    "themeMode": "light",
+    "fontScale": 1.0,
+    "textDirection": "ltr",
+    "showPerformanceOverlay": false,
+    "devModeGrid": false,
+    "devModeSpacer": false
+  },
+  "splashConfiguration": {
+    "style": "startup",
+    "autoNavigate": true,
+    "durationSeconds": 1,
+    "appName": "NavGo",
+    "appVersion": "0.1.0",
+    "primaryColor": "#2D9CDB",
+    "textColor": "#333333",
+    "backgroundColor": "#F2F4F6",
+    "showLoadingIndicator": false,
+    "showAppVersion": false,
+    "showCopyright": false
+  },
+  "featureFlags": {
+    "onboardingEnabled": true,
+    "analyticsEnabled": false,
+    "crashReportingEnabled": false,
+    "remoteConfigEnabled": false
+  },
+  "navigationConfiguration": {
+    "defaultRoute": "/",
+    "enableDeepLinking": true,
+    "enableBackButton": true
+  },
+  "apiConfiguration": {
+    "baseUrl": "http://10.0.2.2:8080",
+    "timeoutSeconds": 45,
+    "retryCount": 2,
+    "enableLogging": true
+  },
+  "permissionsConfiguration": {
+    "requestOnStartup": false,
+    "requiredPermissions": [],
+    "optionalPermissions": [],
+    "showSummaryFirst": false
+  },
+  "localizationConfiguration": {
+    "defaultLocale": "tr",
+    "supportedLocales": ["tr", "en"],
+    "fallbackLocale": "en"
+  },
+  "storageConfiguration": {
+    "localStorageType": "sharedPreferences",
+    "enableEncryption": false,
+    "cacheDurationDays": 7,
+    "maxCacheSizeMb": 50
+  },
+  "pushNotificationConfiguration": {
+    "enabled": false,
+    "defaultProvider": "onesignal",
+    "autoInitialize": false,
+    "providers": {
+      "onesignal": {
+        "enabled": false,
+        "appId": ""
+      },
+      "firebase": {
+        "enabled": false,
+        "vapidKey": ""
+      }
+    }
+  }
+}

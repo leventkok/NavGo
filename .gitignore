@@ -1,5 +1,6 @@
 # Binaries
 bin/
+masterfabric-go/bin/
 *.exe
 *.exe~
 *.dll
@@ -12,6 +13,7 @@ bin/
 # Output of go coverage
 *.out
 coverage.html
+masterfabric-go/coverage.html
 
 # Go workspace
 go.work
@@ -33,13 +35,21 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Node / Next.js
-web/node_modules/
-web/.next/
-web/out/
+# Node / Next.js (frontend)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
 
-# Vendor (optional)
-# vendor/
+# Flutter
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/.pub-cache/
+mobile/.pub/
+mobile/build/
+mobile/**/Generated.xcconfig
+mobile/**/flutter_export_environment.sh
 
 # Build output
 dist/
@@ -48,3 +58,4 @@ tmp/
 
 # Air hot-reload
 bin/air
+masterfabric-go/bin/air

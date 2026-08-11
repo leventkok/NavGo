@@ -1,103 +1,52 @@
 # NavGo
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
-![Go Version](https://img.shields.io/badge/go-1.26.4-00ADD8?logo=go)
+Monorepo for grounded travel day-plans.
 
-**NavGo** is a Go backend for grounded travel day-plans: Places search, day routes, and itinerary persistence. LLM inference runs on the client (browser web-llm demo / Flutter on-device MLC); this API stores decisions and proxies Maps data.
+| Package | Role |
+|---------|------|
+| [`masterfabric-go/`](masterfabric-go/) | Go API — Places, Routes, itineraries, IAM |
+| [`frontend/`](frontend/) | Next.js + browser Gemma (web-llm) |
+| [`mobile/`](mobile/) | Flutter day-planner client |
 
-Same licensing posture as [mlc-llm-monitoring](https://github.com/leventkok/mlc-llm-monitoring) (no root LICENSE). Platform patterns adapted from [masterfabric-go](https://github.com/gurkanfikretgunak/masterfabric-go) — see [NOTICE](NOTICE).
+LLM runs on the client (browser / later on-device MLC). The API stores decisions and talks to Google Places/Routes.
 
-## Architecture
+Same licensing posture as [mlc-llm-monitoring](https://github.com/leventkok/mlc-llm-monitoring) (no root LICENSE). See [`masterfabric-go/NOTICE`](masterfabric-go/NOTICE).
 
-- Clean / hexagonal layers (`domain` → `application` → `infrastructure` / `gateway`)
-- Platform modules from masterfabric-go: IAM, Tenant, API Management, Audit, WebSocket
-- **Trip** bounded context: Google-shaped `PlacesClient` / `DirectionsClient`, mock adapters, **pgvector** place cache, itineraries
-- **MCP server** (`cmd/mcp`) shares the same application services as HTTP
+## Quick start
 
-## Quick Start
-
-### Prerequisites
-
-- Go 1.26.4+
-- Docker & Docker Compose
-- (Optional) `goose` CLI
-
-### Infra + server
+### Backend
 
 ```bash
-# Postgres (pgvector) + Redis
+cd masterfabric-go
 make docker-up
-
-# Migrations
 make migrate
-
-# API
+# set GOOGLE_MAPS_API_KEY optionally
 make run
 ```
 
-Health:
+### Frontend
 
 ```bash
-curl http://localhost:8080/health/live
-curl http://localhost:8080/health/ready
-```
-
-### Trip API (JWT required)
-
-```bash
-# After register/login → Bearer token
-curl -s -X POST http://localhost:8080/api/v1/places/search \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"query":"gezilecek yerler","area":"Kaleiçi Antalya","max_results":5}'
-
-curl -s -X POST http://localhost:8080/api/v1/routes/build \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"place_ids":["ChIJkaleici_hadrian_gate","ChIJkaleici_old_harbor"],"optimize_waypoint_order":true}'
-```
-
-Grounding contract: [docs/CLIENT_CONTRACT.md](docs/CLIENT_CONTRACT.md)
-
-### Web demo (Gemma in browser)
-
-```bash
-# Terminal A — API with CORS for Next.js
-$env:CORS_ALLOWED_ORIGINS="http://localhost:3000"
-$env:DB_HOST="127.0.0.1"
-go run ./cmd/server
-
-# Terminal B — web
-cd web
+cd frontend
+cp .env.local.example .env.local
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000 → **Gemma 2B yükle** → prompt → **Günü planla**.  
-Requires WebGPU (Chrome/Edge). Docs: [web/README.md](web/README.md)
+Open http://localhost:3000 — API via same-origin `/navgo-api` proxy.
 
-### MCP
+### Mobile
 
 ```bash
-go run ./cmd/mcp
+cd mobile
+flutter pub get
+flutter run
 ```
 
-Docs: [docs/MCP.md](docs/MCP.md)
+Default API base: `http://10.0.2.2:8080` on Android emulator (`localhost` on iOS sim / desktop).
 
-### Render
+## Docs
 
-See [docs/RENDER.md](docs/RENDER.md).
-
-## Tech stack
-
-| Component | Technology |
-|-----------|------------|
-| Language | Go 1.26.4 |
-| HTTP | Chi |
-| DB | PostgreSQL 16 + pgvector |
-| Cache | Redis 7 |
-| Auth | JWT |
-| MCP | mark3labs/mcp-go (stdio) |
-| Places/Directions | Mock now → Google when `GOOGLE_MAPS_API_KEY` set |
-
-## License
-
-No root LICENSE (same as [mlc-llm-monitoring](https://github.com/leventkok/mlc-llm-monitoring)). See [NOTICE](NOTICE).
+- API contract: [`masterfabric-go/docs/CLIENT_CONTRACT.md`](masterfabric-go/docs/CLIENT_CONTRACT.md)
+- MCP: [`masterfabric-go/docs/MCP.md`](masterfabric-go/docs/MCP.md)
+- Render: [`masterfabric-go/docs/RENDER.md`](masterfabric-go/docs/RENDER.md)
