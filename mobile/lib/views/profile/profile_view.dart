@@ -11,9 +11,41 @@ class ProfileView extends StatelessWidget {
 
   final SessionRepository session;
 
+  static const _tempoLabels = {
+    'calm': 'Sakin',
+    'balanced': 'Dengeli',
+    'packed': 'Dolu',
+  };
+
+  static const _groupLabels = {
+    'solo': 'Yalnız',
+    'couple': 'Çift',
+    'friends': 'Arkadaş',
+    'family': 'Aile',
+  };
+
+  static const _transportLabels = {
+    'walk': 'Yürüyüş',
+    'transit': 'Toplu taşıma',
+    'drive': 'Araç',
+    'bike': 'Bisiklet',
+  };
+
+  static const _interestLabels = {
+    'history': 'Tarih',
+    'food': 'Yemek',
+    'nature': 'Doğa',
+    'art': 'Sanat',
+    'shopping': 'Alışveriş',
+  };
+
   @override
   Widget build(BuildContext context) {
     final name = session.displayName.isEmpty ? 'Gezgin' : session.displayName;
+    final interests = session.interests
+        .map((id) => _interestLabels[id] ?? id)
+        .join(', ');
+
     return Scaffold(
       backgroundColor: context.cBackground,
       body: SafeArea(
@@ -47,11 +79,9 @@ class ProfileView extends StatelessWidget {
                       children: [
                         Text(name, style: context.textTheme.titleLarge),
                         Text(
-                          [
-                            if (session.defaultArea.isNotEmpty)
-                              session.defaultArea,
-                            'Stil: ${session.travelStyle}',
-                          ].join(' · '),
+                          session.defaultArea.isEmpty
+                              ? 'Konum yok'
+                              : session.defaultArea,
                           style: context.textTheme.bodyMedium,
                         ),
                       ],
@@ -62,11 +92,32 @@ class ProfileView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _Row(
-              label: 'Destinasyon',
+              label: 'Konum',
               value: session.defaultArea.isEmpty ? '—' : session.defaultArea,
             ),
+            _Row(
+              label: 'Tempo',
+              value: _tempoLabels[session.tempo] ?? session.tempo,
+            ),
+            _Row(
+              label: 'İlgi',
+              value: interests.isEmpty ? '—' : interests,
+            ),
+            _Row(
+              label: 'Grup',
+              value: _groupLabels[session.groupType] ?? session.groupType,
+            ),
+            _Row(
+              label: 'Taşıt',
+              value:
+                  _transportLabels[session.transportMode] ??
+                  session.transportMode,
+            ),
             _Row(label: 'API', value: defaultApiBaseUrl()),
-            _Row(label: 'Onboarding', value: session.onboardingComplete ? 'Tamam' : 'Eksik'),
+            _Row(
+              label: 'Onboarding',
+              value: session.onboardingComplete ? 'Tamam' : 'Eksik',
+            ),
             const SizedBox(height: 24),
             SecondaryButton(
               label: 'Onboarding’i sıfırla',

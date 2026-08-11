@@ -30,10 +30,20 @@ go.work.sum
 .DS_Store
 Thumbs.db
 
-# Environment
+# Environment / secrets — never commit real keys
 .env
+.env.*
+!.env.example
+!**/.env.example
+!.env.local.example
+!**/.env.local.example
 .env.local
 .env.*.local
+masterfabric-go/.env
+frontend/.env
+frontend/.env.local
+mobile/.env
+
 
 # Node / Next.js (frontend)
 frontend/node_modules/

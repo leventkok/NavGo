@@ -27,7 +27,7 @@ Same licensing posture as [mlc-llm-monitoring](https://github.com/leventkok/mlc-
 ```bash
 make docker-up
 make migrate
-# optional: $env:GOOGLE_MAPS_API_KEY="..."
+# Put secrets in masterfabric-go/.env (gitignored), e.g. GOOGLE_MAPS_API_KEY=...
 make run
 ```
 

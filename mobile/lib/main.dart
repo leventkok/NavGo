@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // MasterFabric core bootstrap (config + local storage).
   await MasterApp.runBefore(
     assetConfigPath: 'assets/app_config.json',
     hydrated: false,
@@ -16,6 +15,8 @@ Future<void> main() async {
     networkFeatures: const {},
     runBeforeFeatures: const {},
   );
+
+  await configureSystemUi();
 
   final prefs = await SharedPreferences.getInstance();
   final session = SessionRepository(prefs);

@@ -7,11 +7,15 @@ class PlannerPlanDayEvent extends PlannerEvent {
     required this.area,
     required this.query,
     this.title = '',
+    this.maxResults = 5,
+    this.travelMode = 'WALK',
   });
 
   final String area;
   final String query;
   final String title;
+  final int maxResults;
+  final String travelMode;
 }
 
 class PlannerResetEvent extends PlannerEvent {}

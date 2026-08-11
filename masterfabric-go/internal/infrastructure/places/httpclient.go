@@ -14,20 +14,26 @@ import (
 //
 // Local middleboxes sometimes break Go's default TLS 1.3 + ML-KEM ClientHello
 // ("tls: server did not echo the legacy session ID"). Stick to classic curves,
-// disable HTTP/2, and retry transient transport failures.
+// disable HTTP/2, prefer IPv4 (IPv6 to Google often times out on some Windows
+// networks), and retry transient transport failures.
 func newGoogleHTTPClient() *http.Client {
+	dialer := &net.Dialer{
+		Timeout:   15 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   10 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			// Prefer IPv4 — routes.googleapis.com over IPv6 frequently stalls here.
+			if network == "tcp" || network == "tcp6" {
+				network = "tcp4"
+			}
+			return dialer.DialContext(ctx, network, addr)
+		},
 		ForceAttemptHTTP2: false,
 		TLSNextProto:      map[string]func(authority string, c *tls.Conn) http.RoundTripper{},
 		TLSClientConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,
-			// Avoid post-quantum hybrids (X25519MLKEM768 / SecP*MLKEM*) that
-			// inflate ClientHello and confuse some Windows TLS inspectors.
 			CurvePreferences: []tls.CurveID{
 				tls.X25519,
 				tls.CurveP256,
@@ -38,10 +44,10 @@ func newGoogleHTTPClient() *http.Client {
 		IdleConnTimeout:       30 * time.Second,
 		TLSHandshakeTimeout:   20 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
-		ResponseHeaderTimeout: 30 * time.Second,
+		ResponseHeaderTimeout: 45 * time.Second,
 	}
 	return &http.Client{
-		Timeout:   45 * time.Second,
+		Timeout:   60 * time.Second,
 		Transport: transport,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -53,12 +59,16 @@ func isTransientGoogleTransportErr(err error) bool {
 	if err == nil {
 		return false
 	}
-	msg := err.Error()
-	return strings.Contains(msg, "legacy session ID") ||
-		strings.Contains(msg, "TLS handshake timeout") ||
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "legacy session id") ||
+		strings.Contains(msg, "tls handshake timeout") ||
 		strings.Contains(msg, "connection reset") ||
-		strings.Contains(msg, "EOF") ||
-		strings.Contains(msg, "i/o timeout")
+		strings.Contains(msg, "eof") ||
+		strings.Contains(msg, "i/o timeout") ||
+		strings.Contains(msg, "wsarecv") ||
+		strings.Contains(msg, "did not properly respond") ||
+		strings.Contains(msg, "connection attempt failed") ||
+		strings.Contains(msg, "forcibly closed")
 }
 
 // doGoogleRequest runs an HTTP request with a couple of retries for flaky Windows TLS.
