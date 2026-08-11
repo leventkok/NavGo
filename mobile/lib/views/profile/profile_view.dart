@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:navgo_mobile/core/constants/api_constants.dart';
 import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
 import 'package:navgo_mobile/core/widgets/primary_button.dart';
@@ -112,11 +111,6 @@ class ProfileView extends StatelessWidget {
               value:
                   _transportLabels[session.transportMode] ??
                   session.transportMode,
-            ),
-            _Row(label: 'API', value: defaultApiBaseUrl()),
-            _Row(
-              label: 'Onboarding',
-              value: session.onboardingComplete ? 'Tamam' : 'Eksik',
             ),
             const SizedBox(height: 24),
             SecondaryButton(

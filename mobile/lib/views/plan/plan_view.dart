@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
 import 'package:navgo_mobile/core/utils/maps_launcher.dart';
+import 'package:navgo_mobile/core/widgets/manual_area_dialog.dart';
 import 'package:navgo_mobile/data/location_service.dart';
 import 'package:navgo_mobile/data/session_repository.dart';
 import 'package:navgo_mobile/views/plan/models/plan_suggestion.dart';
@@ -45,18 +46,14 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
         return Scaffold(
           backgroundColor: context.cBackground,
           body: SafeArea(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 350),
-              child: switch (state.phase) {
-                PlannerPhase.home => _buildHome(context, state),
-                PlannerPhase.working => Padding(
-                    key: const ValueKey('working'),
-                    padding: context.paddingNormal,
-                    child: progressBody(context, message: state.statusMessage),
-                  ),
-                PlannerPhase.done => _buildDone(context, state),
-              },
-            ),
+            child: switch (state.phase) {
+              PlannerPhase.home => _buildHome(context, state),
+              PlannerPhase.working => Padding(
+                  padding: context.paddingNormal,
+                  child: progressBody(context, message: state.statusMessage),
+                ),
+              PlannerPhase.done => _buildDone(context, state),
+            },
           ),
         );
       },
@@ -80,7 +77,6 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
     final areaLabel = _area.isEmpty ? null : _area;
 
     return ListView(
-      key: const ValueKey('home'),
       padding: context.paddingNormal,
       children: [
         homeHeader(context, name: name),
@@ -116,11 +112,16 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
         ),
         if (state.errorMessage != null) ...[
           const SizedBox(height: 12),
-          Text(
-            state.errorMessage!,
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: AppColors.danger,
-            ),
+          planErrorBanner(
+            context,
+            message: state.errorMessage!,
+            canRetry: state.lastPlanEvent != null,
+            onRetry: () => context.read<PlannerViewModel>().add(
+                  PlannerRetryEvent(),
+                ),
+            onDismiss: () => context.read<PlannerViewModel>().add(
+                  PlannerDismissErrorEvent(),
+                ),
           ),
         ],
         const SizedBox(height: 28),
@@ -129,7 +130,7 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
         Text(
           areaLabel == null
               ? 'Konumunu seç, ardından bir rota tipi seç.'
-              : '$areaLabel için bir rota tipi seç — tercihlerine göre grounded Places.',
+              : '$areaLabel için bir rota tipi seç — ilgi alanlarına göre gerçek mekanlar.',
           style: context.textTheme.bodyMedium,
         ),
         const SizedBox(height: 14),
@@ -166,9 +167,11 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
         return outcome.result!.area;
       }
       if (!mounted) return null;
-      final manual = await _promptArea(
+      final manual = await promptLocationAreaAfterFailure(
         context,
-        hint: LocationService.failureMessage(outcome.failure),
+        failure: outcome.failure,
+        resolveAgain: _location.resolveAreaDetailed,
+        initialValue: _area,
       );
       if (manual == null || manual.trim().isEmpty) return null;
       await widget.session.setDefaultArea(manual.trim());
@@ -177,47 +180,6 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
     } finally {
       if (mounted) setState(() => _resolvingLocation = false);
     }
-  }
-
-  Future<String?> _promptArea(BuildContext context, {String? hint}) async {
-    final ctrl = TextEditingController(text: _area);
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Şehir veya ilçe'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (hint != null) ...[
-                Text(hint, style: context.textTheme.bodyMedium),
-                const SizedBox(height: 12),
-              ],
-              TextField(
-                controller: ctrl,
-                autofocus: true,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  hintText: 'Örn. Kadıköy, İstanbul',
-                ),
-                onSubmitted: (v) => Navigator.pop(ctx, v),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Vazgeç'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, ctrl.text),
-              child: const Text('Tamam'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   Future<void> _ensureAreaThen(
@@ -250,124 +212,31 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
 
   Future<void> _openStartSheet(BuildContext context) async {
     final vm = context.read<PlannerViewModel>();
-    final areaCtrl = TextEditingController(text: _area);
-
-    await showModalBottomSheet<void>(
+    final pick = await showModalBottomSheet<_PlanStartPick>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 16,
-            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom +
-                MediaQuery.paddingOf(sheetContext).bottom +
-                20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceMuted,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Nereye gidelim?',
-                style: sheetContext.textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Konumundan gelen alanı kullan veya başka bir destinasyon yaz.',
-                style: sheetContext.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: areaCtrl,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Destinasyon',
-                  hintText: 'Örn. Kadıköy, İstanbul',
-                ),
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () async {
-                    final resolved = await _location.resolveArea();
-                    if (resolved != null && resolved.area.isNotEmpty) {
-                      areaCtrl.text = resolved.area;
-                    } else if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Konum alınamadı — manuel yazabilirsin',
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.my_location, size: 18),
-                  label: const Text('Konumumu kullan'),
-                ),
-              ),
-              const SizedBox(height: 4),
-              for (final s in planSuggestions) ...[
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    backgroundColor: s.accent.withValues(alpha: 0.12),
-                    child: Icon(s.icon, color: s.accent),
-                  ),
-                  title:
-                      Text(s.title, style: sheetContext.textTheme.titleMedium),
-                  subtitle: Text(s.subtitle),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                  onTap: () async {
-                    final area = areaCtrl.text.trim();
-                    if (area.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Önce şehir veya ilçe yaz'),
-                        ),
-                      );
-                      return;
-                    }
-                    await widget.session.setDefaultArea(area);
-                    if (!sheetContext.mounted) return;
-                    Navigator.pop(sheetContext);
-                    vm.add(
-                      PlannerPlanDayEvent(
-                        area: area,
-                        query: _buildQuery(s),
-                        title: s.title,
-                        maxResults: widget.session.maxResultsForTempo,
-                        travelMode: widget.session.apiTravelMode,
-                      ),
-                    );
-                  },
-                ),
-                const Divider(height: 8),
-              ],
-            ],
-          ),
-        );
-      },
+      builder: (sheetContext) => _PlanStartSheet(
+        initialArea: _area,
+        location: _location,
+      ),
     );
-    areaCtrl.dispose();
-    if (mounted) setState(() {});
+    if (pick == null || !mounted) return;
+    await widget.session.setDefaultArea(pick.area);
+    if (!mounted) return;
+    vm.add(
+      PlannerPlanDayEvent(
+        area: pick.area,
+        query: _buildQuery(pick.suggestion),
+        title: pick.suggestion.title,
+        maxResults: widget.session.maxResultsForTempo,
+        travelMode: widget.session.apiTravelMode,
+      ),
+    );
+    setState(() {});
   }
 
   Widget _buildDone(BuildContext context, PlannerState state) {
@@ -377,28 +246,11 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
     final title = state.planTitle.isEmpty ? 'Gün planı' : state.planTitle;
 
     return Padding(
-      key: const ValueKey('done'),
       padding: context.paddingNormal,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(title, style: context.textTheme.headlineMedium),
-              ),
-              TextButton(
-                onPressed: () =>
-                    context.read<PlannerViewModel>().add(PlannerResetEvent()),
-                child: Text(
-                  'Ana sayfa',
-                  style: context.textTheme.labelLarge?.copyWith(
-                    color: context.cPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          Text(title, style: context.textTheme.headlineMedium),
           Text(
             '$km km · ~$mins dk · ${route.provider}',
             style: context.textTheme.bodyMedium,
@@ -412,6 +264,155 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
             onReset: () =>
                 context.read<PlannerViewModel>().add(PlannerResetEvent()),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanStartPick {
+  const _PlanStartPick({required this.area, required this.suggestion});
+
+  final String area;
+  final PlanSuggestion suggestion;
+}
+
+class _PlanStartSheet extends StatefulWidget {
+  const _PlanStartSheet({
+    required this.initialArea,
+    required this.location,
+  });
+
+  final String initialArea;
+  final LocationService location;
+
+  @override
+  State<_PlanStartSheet> createState() => _PlanStartSheetState();
+}
+
+class _PlanStartSheetState extends State<_PlanStartSheet> {
+  late final TextEditingController _areaCtrl;
+  var _resolving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _areaCtrl = TextEditingController(text: widget.initialArea);
+  }
+
+  @override
+  void dispose() {
+    _areaCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _useLocation() async {
+    setState(() => _resolving = true);
+    try {
+      final outcome = await widget.location.resolveAreaDetailed();
+      if (outcome.result != null && outcome.result!.area.isNotEmpty) {
+        _areaCtrl.text = outcome.result!.area;
+        return;
+      }
+      if (!mounted) return;
+      final area = await promptLocationAreaAfterFailure(
+        context,
+        failure: outcome.failure,
+        resolveAgain: widget.location.resolveAreaDetailed,
+        initialValue: _areaCtrl.text,
+      );
+      if (area != null && area.isNotEmpty) {
+        _areaCtrl.text = area;
+      }
+    } finally {
+      if (mounted) setState(() => _resolving = false);
+    }
+  }
+
+  void _pickSuggestion(PlanSuggestion suggestion) {
+    final area = _areaCtrl.text.trim();
+    if (area.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Önce şehir veya ilçe yaz')),
+      );
+      return;
+    }
+    Navigator.pop(
+      context,
+      _PlanStartPick(area: area, suggestion: suggestion),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 16,
+        bottom: MediaQuery.viewInsetsOf(context).bottom +
+            MediaQuery.paddingOf(context).bottom +
+            20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('Nereye gidelim?', style: context.textTheme.headlineMedium),
+          const SizedBox(height: 8),
+          Text(
+            'Konumundan gelen alanı kullan veya başka bir destinasyon yaz.',
+            style: context.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _areaCtrl,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Destinasyon',
+              hintText: 'Örn. Kadıköy, İstanbul',
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _resolving ? null : _useLocation,
+              icon: _resolving
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.my_location, size: 18),
+              label: Text(_resolving ? 'Konum alınıyor…' : 'Konumumu kullan'),
+            ),
+          ),
+          const SizedBox(height: 4),
+          for (final s in planSuggestions) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                backgroundColor: s.accent.withValues(alpha: 0.12),
+                child: Icon(s.icon, color: s.accent),
+              ),
+              title: Text(s.title, style: context.textTheme.titleMedium),
+              subtitle: Text(s.subtitle),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+              onTap: () => _pickSuggestion(s),
+            ),
+            const Divider(height: 8),
+          ],
         ],
       ),
     );

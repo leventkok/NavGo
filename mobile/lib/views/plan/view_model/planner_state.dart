@@ -13,6 +13,7 @@ class PlannerState {
     this.route,
     this.statusMessage = '',
     this.errorMessage,
+    this.lastPlanEvent,
   });
 
   final ViewStatus status;
@@ -24,6 +25,7 @@ class PlannerState {
   final RouteModel? route;
   final String statusMessage;
   final String? errorMessage;
+  final PlannerPlanDayEvent? lastPlanEvent;
 
   PlannerState copyWith({
     ViewStatus? status,
@@ -37,6 +39,8 @@ class PlannerState {
     String? statusMessage,
     String? errorMessage,
     bool clearError = false,
+    PlannerPlanDayEvent? lastPlanEvent,
+    bool clearLastPlanEvent = false,
   }) {
     return PlannerState(
       status: status ?? this.status,
@@ -48,6 +52,9 @@ class PlannerState {
       route: clearRoute ? null : (route ?? this.route),
       statusMessage: statusMessage ?? this.statusMessage,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      lastPlanEvent: clearLastPlanEvent
+          ? null
+          : (lastPlanEvent ?? this.lastPlanEvent),
     );
   }
 }

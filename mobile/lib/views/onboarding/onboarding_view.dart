@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
+import 'package:navgo_mobile/core/widgets/manual_area_dialog.dart';
 import 'package:navgo_mobile/core/widgets/primary_button.dart';
 import 'package:navgo_mobile/data/location_service.dart';
 import 'package:navgo_mobile/data/session_repository.dart';
@@ -34,11 +35,26 @@ class _OnboardingViewState extends State<OnboardingView> {
   var _group = 'solo';
   var _transport = 'walk';
   var _saving = false;
+  String? _nameError;
+  String? _interestsError;
 
   static const _steps = 6;
 
   @override
+  void initState() {
+    super.initState();
+    _nameCtrl.addListener(_onNameChanged);
+  }
+
+  void _onNameChanged() {
+    if (_nameError != null && _nameCtrl.text.trim().isNotEmpty) {
+      setState(() => _nameError = null);
+    }
+  }
+
+  @override
   void dispose() {
+    _nameCtrl.removeListener(_onNameChanged);
     _page.dispose();
     _nameCtrl.dispose();
     super.dispose();
@@ -47,14 +63,13 @@ class _OnboardingViewState extends State<OnboardingView> {
   Future<void> _next() async {
     if (_saving) return;
     if (_index == 1 && _nameCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('İsim gerekli')),
-      );
+      setState(() => _nameError = 'Sana nasıl sesleneceğimizi bilmemiz için isim gerekli');
       return;
     }
     if (_index == 3 && _interests.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('En az bir ilgi alanı seç')),
+      setState(
+        () => _interestsError =
+            'Sana uygun mekanlar önerebilmemiz için en az bir ilgi alanı seç',
       );
       return;
     }
@@ -71,42 +86,13 @@ class _OnboardingViewState extends State<OnboardingView> {
     );
   }
 
-  Future<String?> _promptManualArea(LocationFailure? failure) async {
-    final ctrl = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Şehir veya ilçe'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                LocationService.failureMessage(failure),
-                style: context.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: ctrl,
-                autofocus: true,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  hintText: 'Örn. Kadıköy, İstanbul',
-                ),
-                onSubmitted: (v) => Navigator.pop(ctx, v),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, ctrl.text),
-              child: const Text('Tamam'),
-            ),
-          ],
-        );
-      },
+  void _previous() {
+    if (_saving || _index <= 0) return;
+    unawaited(
+      _page.previousPage(
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      ),
     );
   }
 
@@ -119,7 +105,11 @@ class _OnboardingViewState extends State<OnboardingView> {
       if (outcome.result != null && outcome.result!.area.isNotEmpty) {
         area = outcome.result!.area;
       } else {
-        final manual = await _promptManualArea(outcome.failure);
+        final manual = await promptLocationAreaAfterFailure(
+          context,
+          failure: outcome.failure,
+          resolveAgain: _location.resolveAreaDetailed,
+        );
         if (manual == null || manual.trim().isEmpty) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -158,11 +148,29 @@ class _OnboardingViewState extends State<OnboardingView> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                Text('NavGo', style: context.textTheme.titleLarge),
-                const Spacer(),
-                Text(
-                  '${_index + 1}/$_steps',
-                  style: context.textTheme.labelLarge,
+                if (_index > 0)
+                  IconButton(
+                    onPressed: _saving ? null : _previous,
+                    icon: const Icon(Icons.arrow_back),
+                    tooltip: 'Geri',
+                    visualDensity: VisualDensity.compact,
+                  )
+                else
+                  const SizedBox(width: 48),
+                Expanded(
+                  child: Text(
+                    'NavGo',
+                    style: context.textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SizedBox(
+                  width: 48,
+                  child: Text(
+                    '${_index + 1}/$_steps',
+                    style: context.textTheme.labelLarge,
+                    textAlign: TextAlign.end,
+                  ),
                 ),
               ],
             ),
@@ -187,13 +195,14 @@ class _OnboardingViewState extends State<OnboardingView> {
               onPageChanged: (i) => setState(() => _index = i),
               children: [
                 const _WelcomeStep(),
-                _NameStep(controller: _nameCtrl),
+                _NameStep(controller: _nameCtrl, errorText: _nameError),
                 _TempoStep(
                   selected: _tempo,
                   onSelect: (v) => setState(() => _tempo = v),
                 ),
                 _InterestsStep(
                   selected: _interests,
+                  errorText: _interestsError,
                   onToggle: (id) {
                     setState(() {
                       if (_interests.contains(id)) {
@@ -201,6 +210,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                       } else {
                         _interests.add(id);
                       }
+                      if (_interests.isNotEmpty) _interestsError = null;
                     });
                   },
                 ),
@@ -254,7 +264,7 @@ class _WelcomeStep extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'NavGo konumundan şehir ve ilçeni alır; tercihlerine göre grounded Places ve rota üretir. Yer uydurmaz.',
+          'NavGo, konumunu ve tercihlerini alır; gerçek yerlerden rota ve gün planı oluşturur.',
           style: context.textTheme.bodyLarge?.copyWith(color: AppColors.neutral),
         ),
       ],
@@ -263,8 +273,10 @@ class _WelcomeStep extends StatelessWidget {
 }
 
 class _NameStep extends StatelessWidget {
-  const _NameStep({required this.controller});
+  const _NameStep({required this.controller, this.errorText});
+
   final TextEditingController controller;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +293,11 @@ class _NameStep extends StatelessWidget {
         TextField(
           controller: controller,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(hintText: 'Adın'),
+          decoration: InputDecoration(
+            hintText: 'Adın',
+            errorText: errorText,
+            errorMaxLines: 3,
+          ),
         ),
       ],
     );
@@ -330,10 +346,12 @@ class _InterestsStep extends StatelessWidget {
   const _InterestsStep({
     required this.selected,
     required this.onToggle,
+    this.errorText,
   });
 
   final Set<String> selected;
   final ValueChanged<String> onToggle;
+  final String? errorText;
 
   static const _options = <(String, String, IconData)>[
     ('history', 'Tarih', Icons.account_balance_outlined),
@@ -360,16 +378,44 @@ class _InterestsStep extends StatelessWidget {
           runSpacing: 10,
           children: [
             for (final o in _options)
-              FilterChip(
-                label: Text(o.$2),
-                avatar: Icon(o.$3, size: 18),
-                selected: selected.contains(o.$1),
-                onSelected: (_) => onToggle(o.$1),
-                selectedColor: AppColors.primary.withValues(alpha: 0.18),
-                checkmarkColor: AppColors.primary,
+              Builder(
+                builder: (context) {
+                  final isSelected = selected.contains(o.$1);
+                  return FilterChip(
+                    label: Text(o.$2),
+                    avatar: isSelected
+                        ? null
+                        : Icon(o.$3, size: 18, color: AppColors.neutral),
+                    showCheckmark: true,
+                    selected: isSelected,
+                    onSelected: (_) => onToggle(o.$1),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.12),
+                    backgroundColor: AppColors.surface,
+                    checkmarkColor: AppColors.primary,
+                    labelStyle: TextStyle(
+                      color: isSelected ? AppColors.primary : AppColors.secondary,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                    side: BorderSide(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.surfaceMuted,
+                    ),
+                  );
+                },
               ),
           ],
         ),
+        if (errorText != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            errorText!,
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: AppColors.danger,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -400,7 +446,7 @@ class _GroupStep extends StatelessWidget {
         Text('Kimle geziyorsun?', style: context.textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
-          'Öneri tipini etkiler — örneğin ailede gece hayatı önerilmez.',
+          'Tercihin rotanı ve durakları şekillendirir.',
           style: context.textTheme.bodyLarge?.copyWith(color: AppColors.neutral),
         ),
         const SizedBox(height: 20),
@@ -439,7 +485,7 @@ class _TransportStep extends StatelessWidget {
         Text('Nasıl ilerleyelim?', style: context.textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
-          'Rota hesaplamasında kullanılacak taşıt stili.',
+          'Gün boyunca nasıl dolaşacağını seç — rotan buna göre kurulur.',
           style: context.textTheme.bodyLarge?.copyWith(color: AppColors.neutral),
         ),
         const SizedBox(height: 20),
@@ -503,8 +549,19 @@ class _ChoiceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: context.textTheme.titleMedium),
-                    Text(subtitle, style: context.textTheme.bodyMedium),
+                    Text(
+                      title,
+                      style: context.textTheme.titleMedium?.copyWith(
+                        color: selected ? AppColors.primary : null,
+                        fontWeight: selected ? FontWeight.w600 : null,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: selected ? AppColors.secondary : null,
+                      ),
+                    ),
                   ],
                 ),
               ),

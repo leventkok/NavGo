@@ -73,7 +73,7 @@ mixin PlannerWidgets {
           ),
           const SizedBox(height: 8),
           Text(
-            'Hazır bir rota seç veya kendi gününü oluştur — NavGo uydurma place_id kullanmaz.',
+            'Hazır bir rota seç veya kendi gününü oluştur — duraklar gerçek mekanlardan gelir.',
             style: context.textTheme.bodyMedium?.copyWith(
               color: Colors.white.withValues(alpha: 0.9),
               height: 1.4,
@@ -143,6 +143,73 @@ mixin PlannerWidgets {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget planErrorBanner(
+    BuildContext context, {
+    required String message,
+    required VoidCallback onRetry,
+    required VoidCallback onDismiss,
+    bool canRetry = true,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.error_outline, color: AppColors.danger, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Plan oluşturulamadı',
+                      style: context.textTheme.titleMedium?.copyWith(
+                        color: AppColors.danger,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(message, style: context.textTheme.bodyMedium),
+                  ],
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: onDismiss,
+                icon: Icon(
+                  Icons.close,
+                  size: 20,
+                  color: AppColors.neutral.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+          if (canRetry) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Tekrar dene'),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
