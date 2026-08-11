@@ -141,6 +141,7 @@ export function saveItinerary(
     google_maps_url: string;
     distance_meters: number;
     duration_seconds: number;
+    model?: string;
   },
 ) {
   return request(
@@ -150,7 +151,7 @@ export function saveItinerary(
       body: JSON.stringify({
         ...payload,
         locale: "tr",
-        model: "gemma-2-2b-it-q4f16_1-MLC",
+        model: payload.model ?? "gemma-2-2b-it-q4f16_1-MLC",
         client_meta: { client: "navgo-web" },
       }),
     },
