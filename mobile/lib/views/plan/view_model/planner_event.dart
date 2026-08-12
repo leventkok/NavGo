@@ -30,3 +30,7 @@ class PlannerPlanDayEvent extends PlannerEvent {
 }
 
 class PlannerResetEvent extends PlannerEvent {}
+
+class PlannerRetryEvent extends PlannerEvent {}
+
+class PlannerDismissErrorEvent extends PlannerEvent {}

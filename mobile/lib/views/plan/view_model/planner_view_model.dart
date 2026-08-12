@@ -15,6 +15,8 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
         super(const PlannerState()) {
     on<PlannerPlanDayEvent>(_onPlanDay);
     on<PlannerResetEvent>(_onReset);
+    on<PlannerRetryEvent>(_onRetry);
+    on<PlannerDismissErrorEvent>(_onDismissError);
   }
 
   final PlannerService _service;
@@ -33,9 +35,26 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
         stops: const [],
         clearRoute: true,
         clearError: true,
+        clearLastPlanEvent: true,
         statusMessage: '',
       ),
     );
+  }
+
+  FutureOr<void> _onDismissError(
+    PlannerDismissErrorEvent event,
+    Emitter<PlannerState> emit,
+  ) {
+    emit(state.copyWith(clearError: true));
+  }
+
+  Future<void> _onRetry(
+    PlannerRetryEvent event,
+    Emitter<PlannerState> emit,
+  ) async {
+    final last = state.lastPlanEvent;
+    if (last == null) return;
+    add(last);
   }
 
   FutureOr<void> _onPlanDay(
@@ -58,6 +77,7 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
         area: event.area,
         query: event.query,
         clearError: true,
+        lastPlanEvent: event,
         statusMessage: 'Oturum açılıyor…',
       ),
     );
@@ -160,27 +180,72 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
           status: ViewStatus.success,
           phase: PlannerPhase.done,
           route: route,
+          clearError: true,
           statusMessage: 'Plan hazır',
         ),
       );
     } catch (e) {
-      var message = e.toString().replaceFirst('Exception: ', '');
-      if (e is DioException) {
-        final data = e.response?.data;
-        if (data is Map && data['message'] != null) {
-          message = data['message'].toString();
-        } else if (e.message != null && e.message!.isNotEmpty) {
-          message = e.message!;
-        }
-      }
+      final raw = _rawErrorMessage(e);
       emit(
         state.copyWith(
           status: ViewStatus.failure,
           phase: PlannerPhase.home,
-          errorMessage: message,
+          errorMessage: _friendlyPlanError(e, raw),
           statusMessage: '',
         ),
       );
     }
+  }
+
+  String _rawErrorMessage(Object e) {
+    var message = e.toString().replaceFirst('Exception: ', '');
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map && data['message'] != null) {
+        message = data['message'].toString();
+      } else if (e.message != null && e.message!.isNotEmpty) {
+        message = e.message!;
+      }
+    }
+    return message;
+  }
+
+  String _friendlyPlanError(Object e, String raw) {
+    if (e is DioException) {
+      switch (e.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.receiveTimeout:
+        case DioExceptionType.sendTimeout:
+          return 'İstek zaman aşımına uğradı. Bağlantını kontrol edip tekrar dene.';
+        case DioExceptionType.connectionError:
+          return 'Sunucuya bağlanılamadı. API\'nin çalıştığından emin ol.';
+        default:
+          break;
+      }
+      final status = e.response?.statusCode;
+      if (status == 401 || status == 403) {
+        return 'Oturum açılamadı. Lütfen tekrar dene.';
+      }
+      if (status == 422) {
+        return 'Seçilen mekanlar rota için uygun değil. Başka bir rota dene.';
+      }
+      if (status != null && status >= 500) {
+        return 'Sunucu hatası oluştu. Biraz sonra tekrar dene.';
+      }
+    }
+
+    if (raw.contains('Yeterli grounded') || raw.contains('yeterli')) {
+      return 'Bu bölgede yeterli mekan bulunamadı. Farklı bir destinasyon veya rota tipi dene.';
+    }
+
+    if (raw.length > 120 ||
+        raw.contains('DioException') ||
+        raw.contains('SocketException')) {
+      return 'Plan oluşturulamadı. Lütfen tekrar dene.';
+    }
+
+    return raw.isEmpty
+        ? 'Plan oluşturulamadı. Lütfen tekrar dene.'
+        : raw;
   }
 }

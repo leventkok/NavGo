@@ -64,31 +64,43 @@ class _SplashViewState extends State<SplashView> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const Spacer(),
-              Text('NavGo', style: context.textTheme.headlineLarge),
-              const SizedBox(height: 8),
-              Text(
-                'Grounded day plans',
-                style: context.textTheme.bodyMedium,
-              ),
-              const Spacer(),
-              if (_showContinue)
-                PrimaryButton(
-                  label: 'Devam',
-                  onPressed: _goNext,
-                )
-              else
-                const SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(strokeWidth: 2.5),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'NavGo',
+                  textAlign: TextAlign.center,
+                  style: context.textTheme.headlineLarge,
                 ),
-              const SizedBox(height: 12),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  'Grounded day plans',
+                  textAlign: TextAlign.center,
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.neutral,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                if (_showContinue)
+                  PrimaryButton(
+                    label: 'Devam',
+                    onPressed: _goNext,
+                  )
+                else
+                  const SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: AppColors.primary,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

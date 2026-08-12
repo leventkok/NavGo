@@ -1,144 +1,63 @@
-:root {
-  --bg: #0f1419;
-  --panel: #1a222d;
-  --text: #eef2f6;
-  --muted: #9aa7b5;
-  --accent: #3d9a7a;
-  --accent-2: #e8b86d;
-  --danger: #d96b6b;
-  --border: #2a3542;
-  --font: "Segoe UI", system-ui, sans-serif;
+@import "leaflet/dist/leaflet.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+.filled-icon {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 
-* {
-  box-sizing: border-box;
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
 }
-
-html,
-body {
-  margin: 0;
-  min-height: 100%;
-  background:
-    radial-gradient(1200px 600px at 10% -10%, #1d3b34 0%, transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, #3a2f1c 0%, transparent 45%),
-    var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-}
-
-main {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 4rem;
-}
-
-h1 {
-  margin: 0 0 0.35rem;
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-  letter-spacing: -0.03em;
-}
-
-.lead {
-  color: var(--muted);
-  margin: 0 0 1.5rem;
-  line-height: 1.5;
-}
-
-.panel {
-  background: color-mix(in srgb, var(--panel) 92%, black);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 1.1rem;
-  margin-bottom: 1rem;
-}
-
-label {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin-bottom: 0.4rem;
-}
-
-textarea,
-input {
-  width: 100%;
-  background: #10161d;
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.85rem 0.95rem;
-  font: inherit;
-}
-
-textarea {
-  min-height: 110px;
-  resize: vertical;
-}
-
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  margin-top: 0.85rem;
-}
-
-button {
-  border: 0;
-  border-radius: 999px;
-  padding: 0.7rem 1.1rem;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  background: var(--accent);
-  color: #04140f;
-}
-
-button.secondary {
+.chat-scroll::-webkit-scrollbar-track {
   background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  background-color: #e0e3e5;
+  border-radius: 10px;
 }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.dot-flashing {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 5px;
+  background-color: #0058bc;
+  animation: dot-flashing 1s infinite linear alternate;
+  animation-delay: 0.5s;
 }
-
-.status {
-  font-size: 0.9rem;
-  color: var(--muted);
-  white-space: pre-wrap;
-}
-
-.error {
-  color: var(--danger);
-}
-
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 0.5rem 0 0;
-}
-
-.list li {
-  padding: 0.7rem 0;
-  border-top: 1px solid var(--border);
-}
-
-.list li:first-child {
-  border-top: 0;
-}
-
-.badge {
+.dot-flashing::before,
+.dot-flashing::after {
+  content: "";
   display: inline-block;
-  font-size: 0.75rem;
-  color: var(--accent-2);
-  border: 1px solid color-mix(in srgb, var(--accent-2) 40%, transparent);
-  border-radius: 999px;
-  padding: 0.15rem 0.55rem;
-  margin-left: 0.4rem;
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 5px;
+  background-color: #0058bc;
 }
-
-a {
-  color: var(--accent-2);
+.dot-flashing::before {
+  left: -12px;
+  animation: dot-flashing 1s infinite alternate;
+  animation-delay: 0s;
+}
+.dot-flashing::after {
+  left: 12px;
+  animation: dot-flashing 1s infinite alternate;
+  animation-delay: 1s;
+}
+@keyframes dot-flashing {
+  0% {
+    background-color: #0058bc;
+  }
+  50%,
+  100% {
+    background-color: #d8e2ff;
+  }
 }

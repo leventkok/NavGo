@@ -50,22 +50,59 @@ class LocationService {
     return permission;
   }
 
-  /// Human-readable reason for the manual-entry dialog.
-  static String failureMessage(LocationFailure? failure) {
+  /// Konum izni veya servis kapalı — ayarlara yönlendir.
+  static String settingsRequiredMessage(LocationFailure? failure) {
     return switch (failure) {
       LocationFailure.serviceDisabled =>
-        'Konum servisi kapalı. Emülatörde Extended controls → Location ile konum aç, veya şehir yaz.',
+        'NavGo çalışmak için cihazında konum servisi açık olmalı. Lütfen ayarlardan konumu aç.',
       LocationFailure.permissionDenied =>
-        'Konum izni verilmedi. Şehir veya ilçe yazarak devam edebilirsin.',
+        'NavGo çalışmak için konum izni gerekli. Lütfen izin ver.',
       LocationFailure.permissionDeniedForever =>
-        'Konum izni kalıcı olarak kapalı. Ayarlardan aç veya şehir yaz.',
-      LocationFailure.timeout =>
-        'GPS zaman aşımına uğradı (emülatörde sık olur). Extended controls → Location’dan bir nokta seç veya şehir yaz.',
-      LocationFailure.geocodeFailed =>
-        'Koordinat alındı ama adres çözülemedi. Şehir veya ilçe yaz.',
-      LocationFailure.unknown || null =>
-        'Konum alınamadı. Şehir veya ilçe yazarak devam edebilirsin.',
+        'NavGo çalışmak için konum izni gerekli. Ayarlardan NavGo için konumu aç.',
+      _ =>
+        'NavGo çalışmak için konum izni gerekli. Ayarlardan konumu aç.',
     };
+  }
+
+  /// GPS timeout — izin var, koordinat alınamadı.
+  static String retryMessage(LocationFailure? failure) {
+    return switch (failure) {
+      LocationFailure.timeout =>
+        'Konum alınamadı. Tekrar deneyebilir veya simülatörde konum seçebilirsin.',
+      _ => 'Konum alınamadı. Lütfen tekrar dene.',
+    };
+  }
+
+  /// İzin açık; ağ / adres çözümleme sorunu — manuel giriş.
+  static String manualEntryMessage(LocationFailure? failure) {
+    return switch (failure) {
+      LocationFailure.geocodeFailed =>
+        'Konumun alındı ama adres çözülemedi (ağ sorunu olabilir). Şehir veya ilçe yazarak devam edebilirsin.',
+      LocationFailure.unknown =>
+        'Bağlantı sorunu nedeniyle konum çözülemedi. Şehir veya ilçe yazarak devam edebilirsin.',
+      _ =>
+        'Konum çözülemedi. Şehir veya ilçe yazarak devam edebilirsin.',
+    };
+  }
+
+  static bool requiresSettings(LocationFailure? failure) {
+    return failure == LocationFailure.serviceDisabled ||
+        failure == LocationFailure.permissionDenied ||
+        failure == LocationFailure.permissionDeniedForever;
+  }
+
+  /// Manual entry only when permission was granted but geocoding/network failed.
+  static bool allowsManualEntry(LocationFailure? failure) {
+    return failure == LocationFailure.geocodeFailed ||
+        failure == LocationFailure.unknown;
+  }
+
+  static Future<void> openSettingsForFailure(LocationFailure? failure) async {
+    if (failure == LocationFailure.serviceDisabled) {
+      await Geolocator.openLocationSettings();
+    } else {
+      await Geolocator.openAppSettings();
+    }
   }
 
   Future<LocationResolveResult?> resolveArea() async {
