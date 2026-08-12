@@ -236,13 +236,20 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
   void _startSuggestion(BuildContext context, PlanSuggestion s) {
     _ensureAreaThen(context, (area) async {
       if (!context.mounted) return;
+      final query = _buildQuery(s);
+      final prompt = '${s.title}. $area. ${s.subtitle}. $query';
       context.read<PlannerViewModel>().add(
             PlannerPlanDayEvent(
               area: area,
-              query: _buildQuery(s),
+              query: query,
               title: s.title,
+              prompt: prompt,
               maxResults: widget.session.maxResultsForTempo,
               travelMode: widget.session.apiTravelMode,
+              tempo: widget.session.tempo,
+              interests: widget.session.interests,
+              groupType: widget.session.groupType,
+              transportMode: widget.session.transportMode,
             ),
           );
     });
@@ -348,13 +355,21 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
                     await widget.session.setDefaultArea(area);
                     if (!sheetContext.mounted) return;
                     Navigator.pop(sheetContext);
+                    final query = _buildQuery(s);
+                    final prompt =
+                        '${s.title}. $area. ${s.subtitle}. $query';
                     vm.add(
                       PlannerPlanDayEvent(
                         area: area,
-                        query: _buildQuery(s),
+                        query: query,
                         title: s.title,
+                        prompt: prompt,
                         maxResults: widget.session.maxResultsForTempo,
                         travelMode: widget.session.apiTravelMode,
+                        tempo: widget.session.tempo,
+                        interests: widget.session.interests,
+                        groupType: widget.session.groupType,
+                        transportMode: widget.session.transportMode,
                       ),
                     );
                   },
