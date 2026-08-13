@@ -36,8 +36,7 @@ android {
     productFlavors {
         create("dev") {
             dimension = "env"
-            applicationIdSuffix = ".dev"
-            resValue("string", "app_name", "NavGo Dev")
+            resValue("string", "app_name", "NavGo")
         }
         create("prod") {
             dimension = "env"

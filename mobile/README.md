@@ -58,8 +58,10 @@ assets/config/
 
 | Flavor | Entry | App id (Android / iOS) | Config |
 |--------|-------|------------------------|--------|
-| **dev** | `lib/flavors/main_dev.dart` | `…navgo_mobile.dev` / `…navgoMobile.dev` | `app_config_dev.json` |
+| **dev** | `lib/flavors/main_dev.dart` | `…navgo_mobile` / `…navgoMobile` | `app_config_dev.json` |
 | **prod** | `lib/flavors/main_prod.dart` | `…navgo_mobile` / `…navgoMobile` | `app_config_prod.json` |
+
+Both flavors share the same app name and bundle id (**NavGo**). Which flavor is running is chosen by `--flavor` / `-t`.
 
 Prod API URL is still local for now; update `assets/config/app_config_prod.json` when ready.
 

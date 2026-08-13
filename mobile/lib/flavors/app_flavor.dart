@@ -15,10 +15,7 @@ enum AppFlavor {
         AppFlavor.prod => 'assets/config/app_config_prod.json',
       };
 
-  String get displayName => switch (this) {
-        AppFlavor.dev => 'NavGo Dev',
-        AppFlavor.prod => 'NavGo',
-      };
+  String get displayName => 'NavGo';
 }
 
 Future<void> startApp(AppFlavor flavor) async {

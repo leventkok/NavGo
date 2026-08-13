@@ -1,6 +1,6 @@
 {
   "appSettings": {
-    "appName": "NavGo Dev",
+    "appName": "NavGo",
     "version": "0.1.0",
     "environment": "development",
     "debugMode": true,
@@ -19,7 +19,7 @@
     "style": "startup",
     "autoNavigate": true,
     "durationSeconds": 1,
-    "appName": "NavGo Dev",
+    "appName": "NavGo",
     "appVersion": "0.1.0",
     "primaryColor": "#2D9CDB",
     "textColor": "#333333",
