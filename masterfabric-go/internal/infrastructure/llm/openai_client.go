@@ -29,7 +29,8 @@ func NewOpenAIClient(baseURL, model, apiKey string) *OpenAIClient {
 		model:   model,
 		apiKey:  apiKey,
 		httpClient: &http.Client{
-			Timeout: 90 * time.Second,
+			// Colab/tunnel cold generate can exceed 90s; warm calls are fast.
+			Timeout: 300 * time.Second,
 		},
 	}
 }

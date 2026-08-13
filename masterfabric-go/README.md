@@ -3,7 +3,7 @@
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![Go Version](https://img.shields.io/badge/go-1.26.4-00ADD8?logo=go)
 
-Go backend for grounded travel day-plans: Places search, day routes, and itinerary persistence. Optional **LLM proxy** (`/api/v1/llm/*`) talks to OpenAI-compatible upstream (local Ollama or Render private Ollama). Web still has a web-llm demo; Flutter calls the API (with preference-template fallback if LLM is off).
+Go backend for grounded travel day-plans: Places search, day routes, and itinerary persistence. Optional **LLM proxy** (`/api/v1/llm/*`) talks to OpenAI-compatible upstream (local Ollama, or Colab + Cloudflare Tunnel in prod). Web still has a web-llm demo; Flutter calls the API (with preference-template fallback if LLM is off).
 
 Same licensing posture as [mlc-llm-monitoring](https://github.com/leventkok/mlc-llm-monitoring) (no root LICENSE). Platform patterns adapted from [masterfabric-go](https://github.com/gurkanfikretgunak/masterfabric-go) — see [NOTICE](NOTICE).
 
@@ -92,7 +92,7 @@ See [docs/RENDER.md](docs/RENDER.md).
 | Auth | JWT |
 | MCP | mark3labs/mcp-go (stdio) |
 | Places/Directions | Mock, or Google when `GOOGLE_MAPS_API_KEY` set |
-| LLM | OpenAI-compatible (`LLM_BASE_URL`), e.g. Ollama `gemma2:2b` |
+| LLM | OpenAI-compatible (`LLM_BASE_URL`): Ollama locally, Colab+Cloudflare in prod (`navgo-gemma`) |
 
 ## License
 

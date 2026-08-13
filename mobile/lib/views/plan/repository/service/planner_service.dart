@@ -31,8 +31,10 @@ class PlannerService {
             Dio(
               BaseOptions(
                 baseUrl: baseUrl ?? defaultApiBaseUrl(),
-                connectTimeout: const Duration(seconds: 20),
-                receiveTimeout: const Duration(seconds: 120),
+                // Modal cold start often exceeds 20s connect / 60s first token.
+                connectTimeout: const Duration(seconds: 60),
+                receiveTimeout: const Duration(seconds: 180),
+                sendTimeout: const Duration(seconds: 60),
                 headers: {'Content-Type': 'application/json'},
               ),
             );
@@ -87,7 +89,11 @@ class PlannerService {
           'group_type': groupType,
           'transport_mode': transportMode,
         },
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+          receiveTimeout: const Duration(seconds: 180),
+          sendTimeout: const Duration(seconds: 60),
+        ),
       );
       return PlanIntent.fromJson(res.data as Map<String, dynamic>);
     } on DioException {
@@ -117,7 +123,11 @@ class PlannerService {
               },
           ],
         },
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+          receiveTimeout: const Duration(seconds: 180),
+          sendTimeout: const Duration(seconds: 60),
+        ),
       );
       final raw = (res.data['indices'] as List<dynamic>? ?? [])
           .map((e) => (e as num).toInt())

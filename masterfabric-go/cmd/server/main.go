@@ -214,6 +214,16 @@ func buildDependencies(
 		MaxBodyBytes:       cfg.Server.MaxBodyBytes,
 	}
 
+	// LLM needs only the upstream URL — wire even when Postgres is down.
+	if cfg.LLM.Enabled() {
+		llmClient := llminfra.NewOpenAIClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.APIKey)
+		llmService := llmUC.NewService(llmClient, cfg.LLM.Model)
+		deps.LLMHandler = llmHandler.NewHandler(llmService)
+		log.Info("LLM enabled", "base_url", cfg.LLM.BaseURL, "model", cfg.LLM.Model)
+	} else {
+		log.Info("LLM_BASE_URL unset; /api/v1/llm/* disabled")
+	}
+
 	if db == nil {
 		log.Warn("database not available, API endpoints will not work")
 		return deps
@@ -296,16 +306,6 @@ func buildDependencies(
 		log.Info("GOOGLE_MAPS_API_KEY unset; using mock Places/Directions adapters")
 	} else {
 		log.Info("GOOGLE_MAPS_API_KEY set; using Google Places (New) + Routes adapters")
-	}
-
-	// --- Optional LLM (Ollama / OpenAI-compatible) ---
-	if cfg.LLM.Enabled() {
-		llmClient := llminfra.NewOpenAIClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.APIKey)
-		llmService := llmUC.NewService(llmClient, cfg.LLM.Model)
-		deps.LLMHandler = llmHandler.NewHandler(llmService)
-		log.Info("LLM enabled", "base_url", cfg.LLM.BaseURL, "model", cfg.LLM.Model)
-	} else {
-		log.Info("LLM_BASE_URL unset; /api/v1/llm/* disabled")
 	}
 
 	// --- WebSocket real-time hub ---
