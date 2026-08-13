@@ -19,18 +19,18 @@ class SplashView extends StatefulWidget {
 class _SplashViewState extends State<SplashView> {
   var _navigated = false;
   var _showContinue = false;
-  Timer? _bootTimer;
   Timer? _failsafeTimer;
 
   @override
   void initState() {
     super.initState();
+    // Navigate on first frame — delayed timers can starve under emulator jank
+    // and leave the splash spinner looking "frozen".
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _bootTimer = Timer(const Duration(milliseconds: 600), _goNext);
-      _failsafeTimer = Timer(const Duration(milliseconds: 1800), () {
+      _goNext();
+      _failsafeTimer = Timer(const Duration(seconds: 2), () {
         if (!mounted || _navigated) return;
         setState(() => _showContinue = true);
-        // One more automatic attempt if the first schedule was starved.
         _goNext();
       });
     });
@@ -38,7 +38,6 @@ class _SplashViewState extends State<SplashView> {
 
   @override
   void dispose() {
-    _bootTimer?.cancel();
     _failsafeTimer?.cancel();
     super.dispose();
   }
