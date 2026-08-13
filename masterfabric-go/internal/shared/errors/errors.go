@@ -18,6 +18,7 @@ var (
 	ErrConflict       = errors.New("conflict")
 	ErrRateLimited    = errors.New("rate limited")
 	ErrNotImplemented = errors.New("not implemented")
+	ErrUnavailable    = errors.New("service unavailable")
 )
 
 // DomainError is a structured error with an underlying cause and a message.
@@ -70,6 +71,8 @@ func HTTPStatusCode(err error) int {
 		return http.StatusTooManyRequests
 	case errors.Is(err, ErrNotImplemented):
 		return http.StatusNotImplemented
+	case errors.Is(err, ErrUnavailable):
+		return http.StatusServiceUnavailable
 	default:
 		return http.StatusInternalServerError
 	}

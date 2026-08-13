@@ -61,6 +61,14 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
     PlannerPlanDayEvent event,
     Emitter<PlannerState> emit,
   ) async {
+    final userPrompt = event.prompt.trim().isNotEmpty
+        ? event.prompt.trim()
+        : [
+            if (event.title.trim().isNotEmpty) event.title.trim(),
+            if (event.area.trim().isNotEmpty) event.area.trim(),
+            if (event.query.trim().isNotEmpty) event.query.trim(),
+          ].join('. ');
+
     emit(
       state.copyWith(
         status: ViewStatus.loading,
@@ -76,13 +84,56 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
 
     try {
       final token = await _service.ensureDemoAuth();
-      emit(state.copyWith(statusMessage: 'Mekanlar aranıyor…'));
+
+      var area = event.area.trim();
+      var query = event.query.trim();
+      var maxResults = event.maxResults;
+
+      emit(state.copyWith(statusMessage: 'LLM intent çıkarılıyor…'));
+      final intent = await _service.parseIntent(
+        token: token,
+        prompt: userPrompt,
+        defaultArea: area,
+        tempo: event.tempo,
+        interests: event.interests,
+        groupType: event.groupType,
+        transportMode: event.transportMode,
+      );
+      if (intent != null) {
+        if (area.isEmpty && intent.area.trim().isNotEmpty) {
+          area = intent.area.trim();
+        }
+        if (intent.query.trim().isNotEmpty) {
+          query = intent.query.trim();
+        }
+        maxResults = intent.maxStops.clamp(3, 7);
+        emit(
+          state.copyWith(
+            area: area,
+            query: query,
+            statusMessage: 'Mekanlar aranıyor…',
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            statusMessage: 'Şablon ile mekanlar aranıyor…',
+          ),
+        );
+      }
+
+      if (area.isEmpty) {
+        throw Exception('Destinasyon gerekli');
+      }
+      if (query.isEmpty) {
+        query = area;
+      }
 
       final places = await _service.searchPlaces(
         token: token,
-        area: event.area,
-        query: event.query,
-        maxResults: event.maxResults,
+        area: area,
+        query: query,
+        maxResults: maxResults,
       );
       if (places.length < 2) {
         throw Exception('Yeterli grounded mekan yok');
@@ -91,13 +142,36 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
       emit(
         state.copyWith(
           stops: places,
+          statusMessage: 'LLM durak seçiyor…',
+        ),
+      );
+
+      var selected = places;
+      final indices = await _service.pickStops(
+        token: token,
+        prompt: userPrompt,
+        places: places,
+        maxStops: maxResults.clamp(2, places.length),
+      );
+      if (indices != null && indices.length >= 2) {
+        selected = [
+          for (final i in indices) places[i],
+        ];
+      } else {
+        selected = places.take(maxResults.clamp(2, places.length)).toList();
+        emit(state.copyWith(statusMessage: 'Rota oluşturuluyor…'));
+      }
+
+      emit(
+        state.copyWith(
+          stops: selected,
           statusMessage: 'Rota oluşturuluyor…',
         ),
       );
 
       final route = await _service.buildRoute(
         token: token,
-        placeIds: places.map((p) => p.placeId).toList(),
+        placeIds: selected.map((p) => p.placeId).toList(),
         travelMode: event.travelMode,
       );
 

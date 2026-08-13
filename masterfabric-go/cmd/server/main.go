@@ -18,23 +18,26 @@ import (
 	apimgmtHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/apimanagement"
 	auditHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/audit"
 	iamHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/iam"
+	llmHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/llm"
 	realtimeHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/realtime"
 	tenantHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/tenant"
 	tripHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/trip"
 	"github.com/leventkok/NavGo/internal/infrastructure/http/router"
 	infraKafka "github.com/leventkok/NavGo/internal/infrastructure/kafka"
+	llminfra "github.com/leventkok/NavGo/internal/infrastructure/llm"
 	placesinfra "github.com/leventkok/NavGo/internal/infrastructure/places"
-	infraWS "github.com/leventkok/NavGo/internal/infrastructure/websocket"
 	pgApimgmt "github.com/leventkok/NavGo/internal/infrastructure/postgres/apimanagement"
 	pgAudit "github.com/leventkok/NavGo/internal/infrastructure/postgres/audit"
 	pgIam "github.com/leventkok/NavGo/internal/infrastructure/postgres/iam"
 	placespg "github.com/leventkok/NavGo/internal/infrastructure/postgres/places"
 	pgTenant "github.com/leventkok/NavGo/internal/infrastructure/postgres/tenant"
 	trippg "github.com/leventkok/NavGo/internal/infrastructure/postgres/trip"
+	infraWS "github.com/leventkok/NavGo/internal/infrastructure/websocket"
 
 	// Application use cases
 	apimgmtUC "github.com/leventkok/NavGo/internal/application/apimanagement/usecase"
 	iamUC "github.com/leventkok/NavGo/internal/application/iam/usecase"
+	llmUC "github.com/leventkok/NavGo/internal/application/llm/usecase"
 	realtimeUC "github.com/leventkok/NavGo/internal/application/realtime/usecase"
 	tenantUC "github.com/leventkok/NavGo/internal/application/tenant/usecase"
 	tripUC "github.com/leventkok/NavGo/internal/application/trip/usecase"
@@ -295,6 +298,16 @@ func buildDependencies(
 		log.Info("GOOGLE_MAPS_API_KEY set; using Google Places (New) + Routes adapters")
 	}
 
+	// --- Optional LLM (Ollama / OpenAI-compatible) ---
+	if cfg.LLM.Enabled() {
+		llmClient := llminfra.NewOpenAIClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.APIKey)
+		llmService := llmUC.NewService(llmClient, cfg.LLM.Model)
+		deps.LLMHandler = llmHandler.NewHandler(llmService)
+		log.Info("LLM enabled", "base_url", cfg.LLM.BaseURL, "model", cfg.LLM.Model)
+	} else {
+		log.Info("LLM_BASE_URL unset; /api/v1/llm/* disabled")
+	}
+
 	// --- WebSocket real-time hub ---
 	wsHub := infraWS.NewHub(log, cfg.WebSocket.MaxConnections)
 	eventBridge := infraWS.NewEventBridge(wsHub, appRepo, log)
@@ -331,14 +344,14 @@ func buildDependencies(
 	// 3. Generic dynamic database handler (automatically performs CRUD operations)
 	backendRegistry := gateway.NewBackendRegistry()
 	dynamicResolver := gateway.NewDynamicHandlerResolver(backendRegistry, log, db)
-	
+
 	// Optional: Register service configurations for HTTP proxying
 	// Example:
 	// dynamicResolver.RegisterServiceConfig("product-service", gateway.ServiceConfig{
 	//     BaseURL: "https://api.example.com/products",
 	//     Headers: map[string]string{"Authorization": "Bearer token"},
 	// })
-	
+
 	// Optional: Register specific handlers for services that need custom logic
 	// Example:
 	// productHandler := handlers.NewProductHandler(...)
@@ -353,7 +366,7 @@ func buildDependencies(
 		log,
 		dynamicResolver, // Dynamic handler resolver (supports registered handlers, HTTP proxy, and generic handling)
 		schemaValidator, // Schema validation interceptor
-		piiMasker,      // PII masking interceptor
+		piiMasker,       // PII masking interceptor
 	)
 
 	return deps

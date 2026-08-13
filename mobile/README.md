@@ -14,10 +14,13 @@ City/district comes from GPS (or manual fallback). Preferences bias Places queri
 
 | Tab | Role |
 |-----|------|
-| **Plan** | Prompt → grounded Places → route (BLoC) |
+| **Plan** | Prompt → (optional server LLM intent/pick) → grounded Places → route (BLoC) |
 | **Trips** | Saved itineraries (empty state for now) |
 | **Explore** | Area ideas |
 | **Profile** | Name, location, prefs, API base, reset onboarding |
+
+LLM runs on the **API host** (Ollama), not on the phone. If `LLM_BASE_URL` is unset or Ollama is down, Plan falls back to preference templates.
+
 
 ## Packages
 
@@ -58,6 +61,15 @@ Modern Navigation palette: Primary `#2D9CDB`, Secondary `#333333`, Tertiary `#CA
 ## Run
 
 ```bash
+# Terminal A — Ollama (optional but recommended)
+ollama serve
+ollama pull gemma2:2b
+
+# Terminal B — API (masterfabric-go/.env with GOOGLE_MAPS_API_KEY + LLM_*)
 cd ../masterfabric-go && make run
+
+# Terminal C — app
 cd ../mobile && flutter run
 ```
+
+Teammates: same `.env.example` keys locally; shared staging uses Render Postgres + API + private Ollama (see `masterfabric-go/docs/RENDER.md`).
