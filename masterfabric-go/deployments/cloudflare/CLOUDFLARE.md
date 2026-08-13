@@ -69,8 +69,31 @@ Without a key, chat should return **401**.
 
 See [docs/RENDER.md](../../docs/RENDER.md). After each Colab restart, quick-tunnel URL changes — update `LLM_BASE_URL` on the Web Service.
 
+## Named tunnel (stable domain)
+
+Example for NavGo: `llm.nomagent.com`.
+
+1. Domain on Cloudflare (nameservers at registrar → Cloudflare).
+2. Zero Trust → Networks → Tunnels → Create → copy token.
+3. Public Hostname: subdomain `llm`, domain `nomagent.com`, type HTTP, URL `localhost:8000`.
+4. Colab config:
+
+```python
+CLOUDFLARE_TUNNEL_TOKEN = "eyJ..."
+LLM_PUBLIC_URL = "https://llm.nomagent.com"
+```
+
+5. NavGo / Render env (does not change on Colab restart):
+
+```env
+LLM_BASE_URL=https://llm.nomagent.com/v1
+LLM_MODEL=navgo-gemma
+LLM_API_KEY=...
+SERVER_WRITE_TIMEOUT_SECONDS=300
+```
+
 ## Notes
 
-- Quick tunnel URLs are **ephemeral**. For a stable hostname, create a Cloudflare Tunnel and set `CLOUDFLARE_TUNNEL_TOKEN` + `LLM_PUBLIC_URL`.
-- Colab idle disconnect stops the model; re-run the notebook and refresh Render env.
+- Quick tunnel URLs (`*.trycloudflare.com`) are **ephemeral**. Prefer named tunnel + custom domain.
+- Colab idle disconnect stops the model; re-run the notebook (same token → same hostname).
 - Local Ollama remains optional for offline dev (`LLM_BASE_URL=http://127.0.0.1:11434/v1`).
