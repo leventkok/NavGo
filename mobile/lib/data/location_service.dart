@@ -163,14 +163,6 @@ class LocationService {
   }
 
   Future<Position?> _readPosition() async {
-    try {
-      final last = await Geolocator.getLastKnownPosition();
-      if (last != null) {
-        debugPrint('LocationService: using lastKnownPosition');
-        return last;
-      }
-    } catch (_) {}
-
     final LocationSettings settings =
         defaultTargetPlatform == TargetPlatform.android
             ? AndroidSettings(
@@ -183,14 +175,23 @@ class LocationService {
                 timeLimit: Duration(seconds: 15),
               );
 
+    // Prefer a fresh fix — lastKnown is often a stale emulator mock (wrong city).
     try {
       return await Geolocator.getCurrentPosition(locationSettings: settings);
     } on TimeoutException {
-      return null;
+      debugPrint('LocationService: getCurrentPosition timed out');
     } catch (e) {
       debugPrint('LocationService: getCurrentPosition failed: $e');
-      return null;
     }
+
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) {
+        debugPrint('LocationService: fallback lastKnownPosition');
+        return last;
+      }
+    } catch (_) {}
+    return null;
   }
 
   Future<String?> _reverseGeocode(double lat, double lon) async {

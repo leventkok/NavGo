@@ -51,7 +51,7 @@ func (s *Service) ParseIntent(ctx context.Context, req dto.ParseIntentRequest) (
 
 	userContent := prompt
 	if prefs.Len() > 0 {
-		userContent = "Tercihler:\n" + prefs.String() + "\nPrompt:\n" + prompt
+		userContent = "Preferences:\n" + prefs.String() + "\nPrompt:\n" + prompt
 	}
 
 	content, err := s.chat.Chat(ctx, llm.ChatRequest{
@@ -60,9 +60,9 @@ func (s *Service) ParseIntent(ctx context.Context, req dto.ParseIntentRequest) (
 		Messages: []llm.Message{
 			{
 				Role: "system",
-				Content: "Sen NavGo seyahat asistanısın. Kullanıcı Türkçe prompt verir. SADECE geçerli JSON döndür, başka metin yok. " +
-					"Şema: {\"area\":\"string\",\"query\":\"string\",\"duration_label\":\"string\",\"max_stops\":number}. " +
-					"place_id, lat, lng UYDURMA. area bölge (ör. Kadıköy İstanbul). query arama ifadesi. max_stops 3-6 arası.",
+				Content: "You are the NavGo travel assistant. The user may write in any language; follow their language for area/query/duration_label text. " +
+					"Return ONLY valid JSON, no other text. Schema: {\"area\":\"string\",\"query\":\"string\",\"duration_label\":\"string\",\"max_stops\":number}. " +
+					"Do NOT invent place_id, lat, or lng. area is a district/city (e.g. Kadıköy Istanbul). query is a search phrase in the user's language. max_stops is 3-6.",
 			},
 			{Role: "user", Content: userContent},
 		},
@@ -99,7 +99,7 @@ func (s *Service) ParseIntent(ctx context.Context, req dto.ParseIntentRequest) (
 	}
 	duration := strings.TrimSpace(parsed.DurationLabel)
 	if duration == "" {
-		duration = "1 gün"
+		duration = "1 day"
 	}
 	maxStops := parsed.MaxStops
 	if maxStops < 3 {
@@ -155,13 +155,13 @@ func (s *Service) PickStops(ctx context.Context, req dto.PickStopsRequest) (*dto
 		Messages: []llm.Message{
 			{
 				Role: "system",
-				Content: "Verilen numaralı mekan listesinden gün planı için indeks seç. SADECE JSON: {\"indices\":[number,...]}. " +
-					"Listede olmayan numara kullanma. place_id uydurma.",
+				Content: "From the numbered place list, pick stop indices for a day plan. The user prompt may be in any language; use it only to choose relevant places. " +
+					"Return ONLY JSON: {\"indices\":[number,...]}. Do not use numbers absent from the list. Do not invent place_id.",
 			},
 			{
 				Role: "user",
 				Content: fmt.Sprintf(
-					"Prompt: %s\nMax: %d\nMekanlar:\n%s",
+					"Prompt: %s\nMax: %d\nPlaces:\n%s",
 					prompt,
 					maxStops,
 					catalog.String(),
