@@ -40,7 +40,7 @@ masterfabric_core:
 
 ```text
 lib/
-  main.dart
+  flavors/                            # main_dev / main_prod + app_flavor
   app/app.dart + routes.dart          # GoRouter + shell (NavGoRoutes)
   data/session_repository.dart        # onboarding prefs
   views/
@@ -49,7 +49,19 @@ lib/
     trips/ explore/ profile/
   widgets/navgo_shell.dart            # bottom tab bar
   core/                               # theme, models, extensions
+assets/config/
+  app_config_dev.json
+  app_config_prod.json
 ```
+
+## Flavors
+
+| Flavor | Entry | App id (Android / iOS) | Config |
+|--------|-------|------------------------|--------|
+| **dev** | `lib/flavors/main_dev.dart` | `…navgo_mobile.dev` / `…navgoMobile.dev` | `app_config_dev.json` |
+| **prod** | `lib/flavors/main_prod.dart` | `…navgo_mobile` / `…navgoMobile` | `app_config_prod.json` |
+
+Prod API URL is still local for now; update `assets/config/app_config_prod.json` when ready.
 
 ## Design
 
@@ -59,5 +71,11 @@ Modern Navigation palette: Primary `#2D9CDB`, Secondary `#333333`, Tertiary `#CA
 
 ```bash
 cd ../masterfabric-go && make run
-cd ../mobile && flutter run
+
+cd ../mobile
+# Dev (default day-to-day)
+flutter run --flavor dev -t lib/flavors/main_dev.dart
+
+# Prod
+flutter run --flavor prod -t lib/flavors/main_prod.dart
 ```

@@ -5,11 +5,27 @@ import 'package:navgo_mobile/app/routes.dart';
 import 'package:navgo_mobile/data/session_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<void> main() async {
+/// Build flavors for NavGo mobile.
+enum AppFlavor {
+  dev,
+  prod;
+
+  String get assetConfigPath => switch (this) {
+        AppFlavor.dev => 'assets/config/app_config_dev.json',
+        AppFlavor.prod => 'assets/config/app_config_prod.json',
+      };
+
+  String get displayName => switch (this) {
+        AppFlavor.dev => 'NavGo Dev',
+        AppFlavor.prod => 'NavGo',
+      };
+}
+
+Future<void> startApp(AppFlavor flavor) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await MasterApp.runBefore(
-    assetConfigPath: 'assets/app_config.json',
+    assetConfigPath: flavor.assetConfigPath,
     hydrated: false,
     requestTrackingTransparency: false,
     networkFeatures: const {},
@@ -22,5 +38,5 @@ Future<void> main() async {
   final session = SessionRepository(prefs);
   final router = NavGoRoutes.createRouter(session);
 
-  runApp(App(router: router));
+  runApp(App(router: router, title: flavor.displayName));
 }

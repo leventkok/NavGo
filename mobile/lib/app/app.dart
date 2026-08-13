@@ -6,14 +6,15 @@ import 'package:navgo_mobile/core/themes/app_theme_light.dart';
 
 /// Product shell: MasterFabric bootstrap + NavGo theme.
 class App extends StatelessWidget {
-  const App({super.key, required this.router});
+  const App({super.key, required this.router, this.title = 'NavGo'});
 
   final GoRouter router;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'NavGo',
+      title: title,
       debugShowCheckedModeBanner: false,
       theme: navGoThemeLight,
       themeMode: ThemeMode.light,

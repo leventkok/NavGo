@@ -61,7 +61,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/app_config.json
+    - assets/config/app_config_dev.json
+    - assets/config/app_config_prod.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -40,10 +40,10 @@ Open http://localhost:3000 — API via same-origin `/navgo-api` proxy.
 ```bash
 cd mobile
 flutter pub get
-flutter run
+flutter run --flavor dev -t lib/flavors/main_dev.dart
 ```
 
-Default API base: `http://10.0.2.2:8080` on Android emulator (`localhost` on iOS sim / desktop).
+Default API base: `http://10.0.2.2:8080` on Android emulator (`localhost` on iOS sim / desktop). Prod flavor uses the same local URL until `app_config_prod.json` is updated.
 
 ## Docs
 

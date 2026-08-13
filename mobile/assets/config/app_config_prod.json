@@ -2,8 +2,8 @@
   "appSettings": {
     "appName": "NavGo",
     "version": "0.1.0",
-    "environment": "development",
-    "debugMode": true,
+    "environment": "production",
+    "debugMode": false,
     "maintenanceMode": false,
     "minSupportedVersion": "0.1.0"
   },
@@ -43,7 +43,7 @@
     "baseUrl": "http://10.0.2.2:8080",
     "timeoutSeconds": 45,
     "retryCount": 2,
-    "enableLogging": true
+    "enableLogging": false
   },
   "permissionsConfiguration": {
     "requestOnStartup": false,

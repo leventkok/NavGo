@@ -68,18 +68,25 @@ class LocationService {
   static String retryMessage(LocationFailure? failure) {
     return switch (failure) {
       LocationFailure.timeout =>
-        'Konum alınamadı. Tekrar deneyebilir veya simülatörde konum seçebilirsin.',
-      _ => 'Konum alınamadı. Lütfen tekrar dene.',
+        'Konum alınamadı. Tekrar deneyebilir veya şehri elle yazabilirsin.',
+      _ =>
+        'Konum alınamadı. Tekrar deneyebilir veya şehri elle yazabilirsin.',
     };
   }
 
   /// İzin açık; ağ / adres çözümleme sorunu — manuel giriş.
   static String manualEntryMessage(LocationFailure? failure) {
     return switch (failure) {
+      LocationFailure.timeout =>
+        'Konum alınamadı. Şehir veya ilçe yazarak devam edebilirsin.',
       LocationFailure.geocodeFailed =>
         'Konumun alındı ama adres çözülemedi (ağ sorunu olabilir). Şehir veya ilçe yazarak devam edebilirsin.',
       LocationFailure.unknown =>
         'Bağlantı sorunu nedeniyle konum çözülemedi. Şehir veya ilçe yazarak devam edebilirsin.',
+      LocationFailure.serviceDisabled ||
+      LocationFailure.permissionDenied ||
+      LocationFailure.permissionDeniedForever =>
+        'Konum izni olmadan da şehir veya ilçe yazarak devam edebilirsin.',
       _ =>
         'Konum çözülemedi. Şehir veya ilçe yazarak devam edebilirsin.',
     };
@@ -91,10 +98,12 @@ class LocationService {
         failure == LocationFailure.permissionDeniedForever;
   }
 
-  /// Manual entry only when permission was granted but geocoding/network failed.
+  /// GPS / geocode başarısız — manuel şehir girişi sunulabilir.
   static bool allowsManualEntry(LocationFailure? failure) {
-    return failure == LocationFailure.geocodeFailed ||
-        failure == LocationFailure.unknown;
+    return failure == LocationFailure.timeout ||
+        failure == LocationFailure.geocodeFailed ||
+        failure == LocationFailure.unknown ||
+        requiresSettings(failure);
   }
 
   static Future<void> openSettingsForFailure(LocationFailure? failure) async {
