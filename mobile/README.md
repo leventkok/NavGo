@@ -67,7 +67,7 @@ assets/config/
 
 Both flavors share the same app name and bundle id (**NavGo**). Which flavor is running is chosen by `--flavor` / `-t`.
 
-API base URL lives in `assets/config/app_config_*.json` (dev currently points at Render).
+API base URL lives in `assets/config/app_config_*.json` (dev and prod currently point at Render).
 
 ## i18n (slang)
 
