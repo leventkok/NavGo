@@ -198,13 +198,20 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
   void _startSuggestion(BuildContext context, PlanSuggestion s) {
     _ensureAreaThen(context, (area) async {
       if (!context.mounted) return;
+      final query = _buildQuery(s);
+      final prompt = '${s.title}. $area. ${s.subtitle}. $query';
       context.read<PlannerViewModel>().add(
             PlannerPlanDayEvent(
               area: area,
-              query: _buildQuery(s),
+              query: query,
               title: s.title,
+              prompt: prompt,
               maxResults: widget.session.maxResultsForTempo,
               travelMode: widget.session.apiTravelMode,
+              tempo: widget.session.tempo,
+              interests: widget.session.interests,
+              groupType: widget.session.groupType,
+              transportMode: widget.session.transportMode,
             ),
           );
     });
@@ -227,13 +234,21 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
     if (pick == null || !mounted) return;
     await widget.session.setDefaultArea(pick.area);
     if (!mounted) return;
+    final query = _buildQuery(pick.suggestion);
+    final prompt =
+        '${pick.suggestion.title}. ${pick.area}. ${pick.suggestion.subtitle}. $query';
     vm.add(
       PlannerPlanDayEvent(
         area: pick.area,
-        query: _buildQuery(pick.suggestion),
+        query: query,
         title: pick.suggestion.title,
+        prompt: prompt,
         maxResults: widget.session.maxResultsForTempo,
         travelMode: widget.session.apiTravelMode,
+        tempo: widget.session.tempo,
+        interests: widget.session.interests,
+        groupType: widget.session.groupType,
+        transportMode: widget.session.transportMode,
       ),
     );
     setState(() {});

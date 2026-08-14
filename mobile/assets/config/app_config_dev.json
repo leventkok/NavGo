@@ -40,8 +40,8 @@
     "enableBackButton": true
   },
   "apiConfiguration": {
-    "baseUrl": "http://10.0.2.2:8080",
-    "timeoutSeconds": 45,
+    "baseUrl": "https://navgo-api-hw7g.onrender.com",
+    "timeoutSeconds": 180,
     "retryCount": 2,
     "enableLogging": true
   },

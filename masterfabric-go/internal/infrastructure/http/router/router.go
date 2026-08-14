@@ -16,6 +16,7 @@ import (
 	auditHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/audit"
 	"github.com/leventkok/NavGo/internal/infrastructure/http/handler/health"
 	iamHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/iam"
+	llmHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/llm"
 	realtimeHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/realtime"
 	tenantHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/tenant"
 	tripHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/trip"
@@ -56,6 +57,7 @@ type Dependencies struct {
 	AuditHandler    *auditHandler.Handler
 	RealtimeHandler *realtimeHandler.Handler
 	TripHandler     *tripHandler.Handler
+	LLMHandler      *llmHandler.Handler
 
 	// Gateway
 	GatewayPipeline *gateway.Pipeline
@@ -199,6 +201,14 @@ func New(deps Dependencies) *chi.Mux {
 						r.Post("/", deps.TripHandler.SaveItinerary)
 						r.Get("/", deps.TripHandler.ListItineraries)
 						r.Get("/{id}", deps.TripHandler.GetItinerary)
+					})
+				}
+
+				// LLM planning helpers (OpenAI-compatible upstream; optional)
+				if deps.LLMHandler != nil {
+					r.Route("/llm", func(r chi.Router) {
+						r.Post("/parse-intent", deps.LLMHandler.ParseIntent)
+						r.Post("/pick-stops", deps.LLMHandler.PickStops)
 					})
 				}
 

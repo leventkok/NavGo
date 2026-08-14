@@ -14,10 +14,13 @@ City/district comes from GPS (or manual fallback). Preferences bias Places queri
 
 | Tab | Role |
 |-----|------|
-| **Plan** | Prompt → grounded Places → route (BLoC) |
+| **Plan** | Prompt → (optional server LLM intent/pick) → grounded Places → route (BLoC) |
 | **Trips** | Saved itineraries (empty state for now) |
 | **Explore** | Area ideas |
 | **Profile** | Name, location, prefs, API base, reset onboarding |
+
+LLM runs on the **API host** (Ollama), not on the phone. If `LLM_BASE_URL` is unset or Ollama is down, Plan falls back to preference templates.
+
 
 ## Packages
 
@@ -63,7 +66,7 @@ assets/config/
 
 Both flavors share the same app name and bundle id (**NavGo**). Which flavor is running is chosen by `--flavor` / `-t`.
 
-Prod API URL is still local for now; update `assets/config/app_config_prod.json` when ready.
+API base URL lives in `assets/config/app_config_*.json` (dev currently points at Render).
 
 ## Design
 
@@ -72,8 +75,14 @@ Modern Navigation palette: Primary `#2D9CDB`, Secondary `#333333`, Tertiary `#CA
 ## Run
 
 ```bash
+# Terminal A — Ollama (optional but recommended)
+ollama serve
+ollama pull gemma2:2b
+
+# Terminal B — API (masterfabric-go/.env with GOOGLE_MAPS_API_KEY + LLM_*)
 cd ../masterfabric-go && make run
 
+# Terminal C — app
 cd ../mobile
 # Dev (default day-to-day)
 flutter run --flavor dev -t lib/flavors/main_dev.dart
@@ -81,3 +90,5 @@ flutter run --flavor dev -t lib/flavors/main_dev.dart
 # Prod
 flutter run --flavor prod -t lib/flavors/main_prod.dart
 ```
+
+Teammates: same `.env.example` keys locally; shared staging uses Render Postgres + API + private Ollama (see `masterfabric-go/docs/RENDER.md`).

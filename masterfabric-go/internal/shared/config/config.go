@@ -19,12 +19,26 @@ type Config struct {
 	WebSocket  WebSocketConfig
 	Log        LogConfig
 	GoogleMaps GoogleMapsConfig
+	LLM        LLMConfig
 }
 
 // GoogleMapsConfig holds Maps / Places credentials.
 // Empty APIKey selects mock Places/Directions adapters.
 type GoogleMapsConfig struct {
 	APIKey string
+}
+
+// LLMConfig holds OpenAI-compatible chat settings (Ollama, managed APIs, etc.).
+// Empty BaseURL disables LLM endpoints (clients should fall back to templates).
+type LLMConfig struct {
+	BaseURL string
+	Model   string
+	APIKey  string
+}
+
+// Enabled reports whether an LLM upstream is configured.
+func (c LLMConfig) Enabled() bool {
+	return strings.TrimSpace(c.BaseURL) != ""
 }
 
 // WebSocketConfig holds real-time WebSocket settings.
@@ -38,13 +52,13 @@ type WebSocketConfig struct {
 
 // ServerConfig holds HTTP server settings.
 type ServerConfig struct {
-	Host              string
-	Port              int
-	ReadTimeout       time.Duration
-	WriteTimeout      time.Duration
-	IdleTimeout       time.Duration
+	Host               string
+	Port               int
+	ReadTimeout        time.Duration
+	WriteTimeout       time.Duration
+	IdleTimeout        time.Duration
 	CORSAllowedOrigins []string
-	MaxBodyBytes      int64
+	MaxBodyBytes       int64
 }
 
 // DatabaseConfig holds PostgreSQL connection settings.
@@ -114,9 +128,9 @@ func Load() *Config {
 	return &Config{
 		Server: ServerConfig{
 			Host:               envOrDefault("SERVER_HOST", "0.0.0.0"),
-			Port:               envOrDefaultInt("SERVER_PORT", 8080),
+			Port:               firstEnvInt([]string{"PORT", "SERVER_PORT"}, 8080),
 			ReadTimeout:        time.Duration(envOrDefaultInt("SERVER_READ_TIMEOUT_SECONDS", 15)) * time.Second,
-			WriteTimeout:       time.Duration(envOrDefaultInt("SERVER_WRITE_TIMEOUT_SECONDS", 60)) * time.Second,
+			WriteTimeout:       time.Duration(envOrDefaultInt("SERVER_WRITE_TIMEOUT_SECONDS", 120)) * time.Second,
 			IdleTimeout:        time.Duration(envOrDefaultInt("SERVER_IDLE_TIMEOUT_SECONDS", 60)) * time.Second,
 			CORSAllowedOrigins: envOrDefaultSlice("CORS_ALLOWED_ORIGINS", nil),
 			MaxBodyBytes:       envOrDefaultInt64("MAX_BODY_BYTES", 1<<20),
@@ -163,12 +177,29 @@ func Load() *Config {
 		GoogleMaps: GoogleMapsConfig{
 			APIKey: envOrDefault("GOOGLE_MAPS_API_KEY", ""),
 		},
+		LLM: LLMConfig{
+			BaseURL: strings.TrimRight(envOrDefault("LLM_BASE_URL", ""), "/"),
+			Model:   envOrDefault("LLM_MODEL", "gemma2:2b"),
+			APIKey:  envOrDefault("LLM_API_KEY", ""),
+		},
 	}
 }
 
 func envOrDefault(key, defaultVal string) string {
 	if val := os.Getenv(key); val != "" {
 		return val
+	}
+	return defaultVal
+}
+
+// firstEnvInt returns the first set integer env var from keys, or defaultVal.
+func firstEnvInt(keys []string, defaultVal int) int {
+	for _, key := range keys {
+		if val := os.Getenv(key); val != "" {
+			if intVal, err := strconv.Atoi(val); err == nil {
+				return intVal
+			}
+		}
 	}
 	return defaultVal
 }

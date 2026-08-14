@@ -69,3 +69,12 @@ tmp/
 # Air hot-reload
 bin/air
 masterfabric-go/bin/air
+
+# Local / superseded PEFT dumps (canonical: sample_*.jsonl + train_v3.jsonl)
+masterfabric-go/deployments/peft-adapters/train_v1.jsonl
+masterfabric-go/deployments/peft-adapters/train_v2.jsonl
+masterfabric-go/deployments/peft-adapters/train_v2_batch.jsonl
+masterfabric-go/deployments/peft-adapters/train_intent.jsonl
+masterfabric-go/deployments/peft-adapters/train_pick_stops.jsonl
+masterfabric-go/deployments/peft-adapters/navgo_train_v3.jsonl
+masterfabric-go/deployments/peft-adapters/sample_train_pick_stops.jsonl
