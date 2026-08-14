@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:navgo_mobile/i18n/strings.g.dart';
 
 enum LocationFailure {
   serviceDisabled,
@@ -54,34 +55,33 @@ class LocationService {
   static String settingsRequiredMessage(LocationFailure? failure) {
     return switch (failure) {
       LocationFailure.serviceDisabled =>
-        'NavGo çalışmak için cihazında konum servisi açık olmalı. Lütfen ayarlardan konumu aç.',
+        t.location.settingsRequired.serviceDisabled,
       LocationFailure.permissionDenied =>
-        'NavGo çalışmak için konum izni gerekli. Lütfen izin ver.',
+        t.location.settingsRequired.permissionDenied,
       LocationFailure.permissionDeniedForever =>
-        'NavGo çalışmak için konum izni gerekli. Ayarlardan NavGo için konumu aç.',
-      _ =>
-        'NavGo çalışmak için konum izni gerekli. Ayarlardan konumu aç.',
+        t.location.settingsRequired.permissionDeniedForever,
+      _ => t.location.settingsRequired.fallback,
     };
   }
 
   /// GPS timeout — izin var, koordinat alınamadı.
   static String retryMessage(LocationFailure? failure) {
     return switch (failure) {
-      LocationFailure.timeout =>
-        'Konum alınamadı. Tekrar deneyebilir veya simülatörde konum seçebilirsin.',
-      _ => 'Konum alınamadı. Lütfen tekrar dene.',
+      _ => t.location.retryMessage,
     };
   }
 
   /// İzin açık; ağ / adres çözümleme sorunu — manuel giriş.
   static String manualEntryMessage(LocationFailure? failure) {
     return switch (failure) {
-      LocationFailure.geocodeFailed =>
-        'Konumun alındı ama adres çözülemedi (ağ sorunu olabilir). Şehir veya ilçe yazarak devam edebilirsin.',
-      LocationFailure.unknown =>
-        'Bağlantı sorunu nedeniyle konum çözülemedi. Şehir veya ilçe yazarak devam edebilirsin.',
-      _ =>
-        'Konum çözülemedi. Şehir veya ilçe yazarak devam edebilirsin.',
+      LocationFailure.timeout => t.location.manualEntry.timeout,
+      LocationFailure.geocodeFailed => t.location.manualEntry.geocodeFailed,
+      LocationFailure.unknown => t.location.manualEntry.unknown,
+      LocationFailure.serviceDisabled ||
+      LocationFailure.permissionDenied ||
+      LocationFailure.permissionDeniedForever =>
+        t.location.manualEntry.noPermission,
+      _ => t.location.manualEntry.fallback,
     };
   }
 
@@ -91,10 +91,12 @@ class LocationService {
         failure == LocationFailure.permissionDeniedForever;
   }
 
-  /// Manual entry only when permission was granted but geocoding/network failed.
+  /// GPS / geocode başarısız — manuel şehir girişi sunulabilir.
   static bool allowsManualEntry(LocationFailure? failure) {
-    return failure == LocationFailure.geocodeFailed ||
-        failure == LocationFailure.unknown;
+    return failure == LocationFailure.timeout ||
+        failure == LocationFailure.geocodeFailed ||
+        failure == LocationFailure.unknown ||
+        requiresSettings(failure);
   }
 
   static Future<void> openSettingsForFailure(LocationFailure? failure) async {

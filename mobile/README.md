@@ -43,7 +43,8 @@ masterfabric_core:
 
 ```text
 lib/
-  main.dart
+  flavors/                            # main_dev / main_prod + app_flavor
+  i18n/                               # slang: tr/en/ru.i18n.json + strings.g.dart
   app/app.dart + routes.dart          # GoRouter + shell (NavGoRoutes)
   data/session_repository.dart        # onboarding prefs
   views/
@@ -52,7 +53,28 @@ lib/
     trips/ explore/ profile/
   widgets/navgo_shell.dart            # bottom tab bar
   core/                               # theme, models, extensions
+assets/config/
+  app_config_dev.json
+  app_config_prod.json
 ```
+
+## Flavors
+
+| Flavor | Entry | App id (Android / iOS) | Config |
+|--------|-------|------------------------|--------|
+| **dev** | `lib/flavors/main_dev.dart` | `…navgo_mobile` / `…navgoMobile` | `app_config_dev.json` |
+| **prod** | `lib/flavors/main_prod.dart` | `…navgo_mobile` / `…navgoMobile` | `app_config_prod.json` |
+
+Both flavors share the same app name and bundle id (**NavGo**). Which flavor is running is chosen by `--flavor` / `-t`.
+
+API base URL lives in `assets/config/app_config_*.json` (dev currently points at Render).
+
+## i18n (slang)
+
+- Sources: `lib/i18n/tr.i18n.json`, `lib/i18n/en.i18n.json`, `lib/i18n/ru.i18n.json`
+- Generate: `dart run slang` → `lib/i18n/strings.g.dart`
+- Usage: `context.t.plan.heroTitle` (or `t.…`)
+- Language: Profile / onboarding dropdown → TR / EN / RU (stored in session)
 
 ## Design
 
@@ -69,7 +91,12 @@ ollama pull gemma2:2b
 cd ../masterfabric-go && make run
 
 # Terminal C — app
-cd ../mobile && flutter run
+cd ../mobile
+# Dev (default day-to-day)
+flutter run --flavor dev -t lib/flavors/main_dev.dart
+
+# Prod
+flutter run --flavor prod -t lib/flavors/main_prod.dart
 ```
 
 Teammates: same `.env.example` keys locally; shared staging uses Render Postgres + API + private Ollama (see `masterfabric-go/docs/RENDER.md`).

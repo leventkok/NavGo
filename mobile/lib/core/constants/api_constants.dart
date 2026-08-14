@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:masterfabric_core/masterfabric_core.dart';
 
 /// Go API base URL.
-/// Prefers `assets/app_config.json` → apiConfiguration.baseUrl when set.
+/// Prefers flavor config (`assets/config/app_config_*.json`) →
+/// `apiConfiguration.baseUrl` when set.
 String defaultApiBaseUrl() {
   try {
     final fromConfig = AssetConfigHelper().getString(

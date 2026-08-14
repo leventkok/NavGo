@@ -2,10 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navgo_mobile/app/app.dart';
 import 'package:navgo_mobile/app/routes.dart';
 import 'package:navgo_mobile/data/session_repository.dart';
+import 'package:navgo_mobile/i18n/strings.g.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    LocaleSettings.setLocaleSync(AppLocale.tr);
+  });
 
   testWidgets('Splash shows NavGo brand then routes to onboarding', (tester) async {
     SharedPreferences.setMockInitialValues({});
@@ -13,7 +18,11 @@ void main() {
     final session = SessionRepository(prefs);
     final router = NavGoRoutes.createRouter(session);
 
-    await tester.pumpWidget(App(router: router));
+    await tester.pumpWidget(
+      TranslationProvider(
+        child: App(router: router),
+      ),
+    );
     expect(find.text('NavGo'), findsWidgets);
 
     await tester.pump(const Duration(milliseconds: 700));

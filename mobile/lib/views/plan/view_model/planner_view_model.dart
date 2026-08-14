@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:navgo_mobile/core/enums/view_status.dart';
 import 'package:navgo_mobile/core/models/place_model.dart';
+import 'package:navgo_mobile/i18n/strings.g.dart';
 import 'package:navgo_mobile/views/plan/repository/service/planner_service.dart';
 
 part 'planner_event.dart';
@@ -78,7 +79,7 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
         query: event.query,
         clearError: true,
         lastPlanEvent: event,
-        statusMessage: 'Oturum açılıyor…',
+        statusMessage: t.plan.statusSigningIn,
       ),
     );
 
@@ -89,7 +90,7 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
       var query = event.query.trim();
       var maxResults = event.maxResults;
 
-      emit(state.copyWith(statusMessage: 'LLM intent çıkarılıyor…'));
+      emit(state.copyWith(statusMessage: t.plan.statusParsingIntent));
       final intent = await _service.parseIntent(
         token: token,
         prompt: userPrompt,
@@ -111,19 +112,19 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
           state.copyWith(
             area: area,
             query: query,
-            statusMessage: 'Mekanlar aranıyor…',
+            statusMessage: t.plan.statusSearchingPlaces,
           ),
         );
       } else {
         emit(
           state.copyWith(
-            statusMessage: 'Şablon ile mekanlar aranıyor…',
+            statusMessage: t.plan.statusSearchingPlacesTemplate,
           ),
         );
       }
 
       if (area.isEmpty) {
-        throw Exception('Destinasyon gerekli');
+        throw Exception(t.plan.errorDestinationRequired);
       }
       if (query.isEmpty) {
         query = area;
@@ -142,7 +143,7 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
       emit(
         state.copyWith(
           stops: places,
-          statusMessage: 'LLM durak seçiyor…',
+          statusMessage: t.plan.statusPickingStops,
         ),
       );
 
@@ -159,13 +160,13 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
         ];
       } else {
         selected = places.take(maxResults.clamp(2, places.length)).toList();
-        emit(state.copyWith(statusMessage: 'Rota oluşturuluyor…'));
+        emit(state.copyWith(statusMessage: t.plan.statusBuildingRoute));
       }
 
       emit(
         state.copyWith(
           stops: selected,
-          statusMessage: 'Rota oluşturuluyor…',
+          statusMessage: t.plan.statusBuildingRoute,
         ),
       );
 
@@ -181,7 +182,7 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
           phase: PlannerPhase.done,
           route: route,
           clearError: true,
-          statusMessage: 'Plan hazır',
+          statusMessage: t.plan.statusReady,
         ),
       );
     } catch (e) {
@@ -216,36 +217,34 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.receiveTimeout:
         case DioExceptionType.sendTimeout:
-          return 'İstek zaman aşımına uğradı. Bağlantını kontrol edip tekrar dene.';
+          return t.plan.errorTimeout;
         case DioExceptionType.connectionError:
-          return 'Sunucuya bağlanılamadı. API\'nin çalıştığından emin ol.';
+          return t.plan.errorConnection;
         default:
           break;
       }
       final status = e.response?.statusCode;
       if (status == 401 || status == 403) {
-        return 'Oturum açılamadı. Lütfen tekrar dene.';
+        return t.plan.errorAuth;
       }
       if (status == 422) {
-        return 'Seçilen mekanlar rota için uygun değil. Başka bir rota dene.';
+        return t.plan.errorUnprocessable;
       }
       if (status != null && status >= 500) {
-        return 'Sunucu hatası oluştu. Biraz sonra tekrar dene.';
+        return t.plan.errorServer;
       }
     }
 
     if (raw.contains('Yeterli grounded') || raw.contains('yeterli')) {
-      return 'Bu bölgede yeterli mekan bulunamadı. Farklı bir destinasyon veya rota tipi dene.';
+      return t.plan.errorNotEnoughPlaces;
     }
 
     if (raw.length > 120 ||
         raw.contains('DioException') ||
         raw.contains('SocketException')) {
-      return 'Plan oluşturulamadı. Lütfen tekrar dene.';
+      return t.plan.errorGeneric;
     }
 
-    return raw.isEmpty
-        ? 'Plan oluşturulamadı. Lütfen tekrar dene.'
-        : raw;
+    return raw.isEmpty ? t.plan.errorGeneric : raw;
   }
 }

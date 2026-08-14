@@ -13,8 +13,12 @@ class SessionRepository {
   static const _kGroupType = 'navgo_group_type';
   static const _kTransportMode = 'navgo_transport_mode';
   static const _kTravelStyleLegacy = 'navgo_travel_style';
+  static const _kLocale = 'navgo_locale';
 
   bool get onboardingComplete => _prefs.getBool(_kOnboarding) ?? false;
+
+  /// BCP-47 language code: `tr` | `en`. Empty = follow device / app default.
+  String get localeCode => _prefs.getString(_kLocale) ?? '';
 
   String get displayName => _prefs.getString(_kDisplayName) ?? '';
 
@@ -72,6 +76,15 @@ class SessionRepository {
 
   Future<void> setDefaultArea(String area) async {
     await _prefs.setString(_kDefaultArea, area.trim());
+  }
+
+  Future<void> setLocaleCode(String code) async {
+    final trimmed = code.trim().toLowerCase();
+    if (trimmed.isEmpty) {
+      await _prefs.remove(_kLocale);
+      return;
+    }
+    await _prefs.setString(_kLocale, trimmed);
   }
 
   Future<void> resetOnboarding() async {

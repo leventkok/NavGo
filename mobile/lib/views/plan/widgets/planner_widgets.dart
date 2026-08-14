@@ -3,25 +3,27 @@ import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/models/place_model.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
 import 'package:navgo_mobile/core/widgets/primary_button.dart';
+import 'package:navgo_mobile/i18n/strings.g.dart';
 import 'package:navgo_mobile/views/plan/models/plan_suggestion.dart';
 
 mixin PlannerWidgets {
-  String greetingForNow() {
+  String greetingForNow(Translations t) {
     final h = DateTime.now().hour;
-    if (h < 12) return 'Günaydın';
-    if (h < 18) return 'İyi günler';
-    return 'İyi akşamlar';
+    if (h < 12) return t.plan.greetingMorning;
+    if (h < 18) return t.plan.greetingAfternoon;
+    return t.plan.greetingEvening;
   }
 
   Widget homeHeader(
     BuildContext context, {
     required String name,
   }) {
+    final t = context.t;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${greetingForNow()},',
+          t.plan.greetingLine(greeting: greetingForNow(t)),
           style: context.textTheme.bodyLarge?.copyWith(color: AppColors.neutral),
         ),
         const SizedBox(height: 2),
@@ -34,6 +36,7 @@ mixin PlannerWidgets {
     BuildContext context, {
     required VoidCallback onStart,
   }) {
+    final t = context.t;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -59,13 +62,13 @@ mixin PlannerWidgets {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
-              'Bugün',
+              t.plan.heroBadge,
               style: context.textTheme.labelLarge?.copyWith(color: Colors.white),
             ),
           ),
           const SizedBox(height: 14),
           Text(
-            'Bir gün. Gerçek yerler.',
+            t.plan.heroTitle,
             style: context.textTheme.headlineMedium?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -73,7 +76,7 @@ mixin PlannerWidgets {
           ),
           const SizedBox(height: 8),
           Text(
-            'Hazır bir rota seç veya kendi gününü oluştur — duraklar gerçek mekanlardan gelir.',
+            t.plan.heroBody,
             style: context.textTheme.bodyMedium?.copyWith(
               color: Colors.white.withValues(alpha: 0.9),
               height: 1.4,
@@ -93,7 +96,7 @@ mixin PlannerWidgets {
                 ),
               ),
               onPressed: onStart,
-              child: const Text('Yeni gün planla'),
+              child: Text(t.plan.heroCta),
             ),
           ),
         ],
@@ -154,6 +157,7 @@ mixin PlannerWidgets {
     required VoidCallback onDismiss,
     bool canRetry = true,
   }) {
+    final t = context.t;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -175,7 +179,7 @@ mixin PlannerWidgets {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Plan oluşturulamadı',
+                      t.plan.errorTitle,
                       style: context.textTheme.titleMedium?.copyWith(
                         color: AppColors.danger,
                       ),
@@ -205,7 +209,7 @@ mixin PlannerWidgets {
               child: TextButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Tekrar dene'),
+                label: Text(t.common.retry),
               ),
             ),
           ],
@@ -215,6 +219,7 @@ mixin PlannerWidgets {
   }
 
   Widget tipBanner(BuildContext context) {
+    final t = context.t;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -228,7 +233,7 @@ mixin PlannerWidgets {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Yürüyüş için serin saatleri tercih et — öğleden sonra gölgeli sokaklar ve kısa molalar daha rahat.',
+              t.plan.tipBanner,
               style: context.textTheme.bodyMedium?.copyWith(
                 color: AppColors.secondary,
               ),
@@ -240,11 +245,12 @@ mixin PlannerWidgets {
   }
 
   Widget progressBody(BuildContext context, {required String message}) {
+    final t = context.t;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('NavGo', style: context.textTheme.headlineMedium),
+          Text(t.common.brand, style: context.textTheme.headlineMedium),
           context.sizedHeightBoxMedium,
           const SizedBox(
             width: 28,
@@ -306,11 +312,12 @@ mixin PlannerWidgets {
     required VoidCallback onOpenMaps,
     required VoidCallback onReset,
   }) {
+    final t = context.t;
     return Column(
       children: [
-        PrimaryButton(label: 'Google Maps’te aç', onPressed: onOpenMaps),
+        PrimaryButton(label: t.plan.openInGoogleMaps, onPressed: onOpenMaps),
         const SizedBox(height: 12),
-        SecondaryButton(label: 'Ana sayfaya dön', onPressed: onReset),
+        SecondaryButton(label: t.plan.backToHome, onPressed: onReset),
       ],
     );
   }

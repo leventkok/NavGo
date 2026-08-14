@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
+import 'package:navgo_mobile/i18n/strings.g.dart';
 
 enum NavGoTab { plan, trips, explore, profile }
 
@@ -44,17 +45,18 @@ class _NavGoTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     final viewPadding = MediaQueryData.fromView(View.of(context)).viewPadding;
     var bottom = viewPadding.bottom;
     if (bottom <= 0) {
       bottom = defaultTargetPlatform == TargetPlatform.iOS ? 28.0 : 10.0;
     }
 
-    const items = <(IconData, String)>[
-      (Icons.map_outlined, 'Plan'),
-      (Icons.luggage_outlined, 'Trips'),
-      (Icons.explore_outlined, 'Explore'),
-      (Icons.person_outline, 'Profile'),
+    final items = <(IconData, String)>[
+      (Icons.map_outlined, t.shell.tabPlan),
+      (Icons.luggage_outlined, t.shell.tabTrips),
+      (Icons.explore_outlined, t.shell.tabExplore),
+      (Icons.person_outline, t.shell.tabProfile),
     ];
 
     return ColoredBox(

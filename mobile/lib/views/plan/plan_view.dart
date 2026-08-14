@@ -6,6 +6,7 @@ import 'package:navgo_mobile/core/utils/maps_launcher.dart';
 import 'package:navgo_mobile/core/widgets/manual_area_dialog.dart';
 import 'package:navgo_mobile/data/location_service.dart';
 import 'package:navgo_mobile/data/session_repository.dart';
+import 'package:navgo_mobile/i18n/strings.g.dart';
 import 'package:navgo_mobile/views/plan/models/plan_suggestion.dart';
 import 'package:navgo_mobile/views/plan/models/preference_query_builder.dart';
 import 'package:navgo_mobile/views/plan/view_model/planner_view_model.dart';
@@ -71,10 +72,12 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
   }
 
   Widget _buildHome(BuildContext context, PlannerState state) {
+    final t = context.t;
     final name = widget.session.displayName.isEmpty
-        ? 'gezgin'
+        ? t.common.defaultTravelerName
         : widget.session.displayName;
     final areaLabel = _area.isEmpty ? null : _area;
+    final suggestions = planSuggestionsFor(t);
 
     return ListView(
       padding: context.paddingNormal,
@@ -99,7 +102,7 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
                   )
                 : const Icon(Icons.my_location, size: 18),
             label: Text(
-              'Konum seç',
+              t.plan.selectLocation,
               style: context.textTheme.labelLarge?.copyWith(
                 color: AppColors.primary,
               ),
@@ -125,12 +128,12 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
           ),
         ],
         const SizedBox(height: 28),
-        Text('Hızlı başlangıç', style: context.textTheme.titleLarge),
+        Text(t.plan.quickStart, style: context.textTheme.titleLarge),
         const SizedBox(height: 6),
         Text(
           areaLabel == null
-              ? 'Konumunu seç, ardından bir rota tipi seç.'
-              : '$areaLabel için bir rota tipi seç — ilgi alanlarına göre gerçek mekanlar.',
+              ? t.plan.quickStartNeedLocation
+              : t.plan.quickStartWithArea(area: areaLabel),
           style: context.textTheme.bodyMedium,
         ),
         const SizedBox(height: 14),
@@ -138,10 +141,10 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
           height: 148,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: planSuggestions.length,
+            itemCount: suggestions.length,
             separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, i) {
-              final s = planSuggestions[i];
+              final s = suggestions[i];
               return suggestionCard(
                 context,
                 suggestion: s,
@@ -255,10 +258,12 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
   }
 
   Widget _buildDone(BuildContext context, PlannerState state) {
+    final t = context.t;
     final route = state.route!;
     final km = (route.distanceMeters / 1000).toStringAsFixed(1);
     final mins = (route.durationSeconds / 60).round();
-    final title = state.planTitle.isEmpty ? 'Gün planı' : state.planTitle;
+    final title =
+        state.planTitle.isEmpty ? t.plan.defaultPlanTitle : state.planTitle;
 
     return Padding(
       padding: context.paddingNormal,
@@ -267,7 +272,11 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
         children: [
           Text(title, style: context.textTheme.headlineMedium),
           Text(
-            '$km km · ~$mins dk · ${route.provider}',
+            t.plan.routeSummary(
+              km: km,
+              mins: mins,
+              provider: route.provider,
+            ),
             style: context.textTheme.bodyMedium,
           ),
           context.sizedHeightBoxNormal,
@@ -345,10 +354,11 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
   }
 
   void _pickSuggestion(PlanSuggestion suggestion) {
+    final t = context.t;
     final area = _areaCtrl.text.trim();
     if (area.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Önce şehir veya ilçe yaz')),
+        SnackBar(content: Text(t.plan.startSheet.areaRequiredSnack)),
       );
       return;
     }
@@ -360,6 +370,8 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
+    final suggestions = planSuggestionsFor(t);
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -384,19 +396,19 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('Nereye gidelim?', style: context.textTheme.headlineMedium),
+          Text(t.plan.startSheet.title, style: context.textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(
-            'Konumundan gelen alanı kullan veya başka bir destinasyon yaz.',
+            t.plan.startSheet.body,
             style: context.textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _areaCtrl,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              labelText: 'Destinasyon',
-              hintText: 'Örn. Kadıköy, İstanbul',
+            decoration: InputDecoration(
+              labelText: t.plan.startSheet.destinationLabel,
+              hintText: t.plan.startSheet.destinationHint,
             ),
           ),
           Align(
@@ -410,11 +422,15 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.my_location, size: 18),
-              label: Text(_resolving ? 'Konum alınıyor…' : 'Konumumu kullan'),
+              label: Text(
+                _resolving
+                    ? t.plan.startSheet.resolvingLocation
+                    : t.plan.startSheet.useMyLocation,
+              ),
             ),
           ),
           const SizedBox(height: 4),
-          for (final s in planSuggestions) ...[
+          for (final s in suggestions) ...[
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: CircleAvatar(

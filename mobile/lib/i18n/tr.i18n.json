@@ -1,0 +1,222 @@
+{
+  "common": {
+    "brand": "NavGo",
+    "cancel": "Vazgeç",
+    "continueAction": "Devam",
+    "ok": "Tamam",
+    "retry": "Tekrar dene",
+    "back": "Geri",
+    "emDash": "—",
+    "defaultTravelerName": "Gezgin",
+    "tempo": {
+      "calm": "Sakin",
+      "balanced": "Dengeli",
+      "packed": "Dolu"
+    },
+    "group": {
+      "solo": "Yalnız",
+      "couple": "Çift",
+      "friends": "Arkadaş",
+      "family": "Aile"
+    },
+    "transport": {
+      "walk": "Yürüyüş",
+      "transit": "Toplu taşıma",
+      "drive": "Araç",
+      "bike": "Bisiklet"
+    },
+    "interest": {
+      "history": "Tarih",
+      "food": "Yemek",
+      "nature": "Doğa",
+      "art": "Sanat",
+      "shopping": "Alışveriş"
+    }
+  },
+  "shell": {
+    "tabPlan": "Plan",
+    "tabTrips": "Trips",
+    "tabExplore": "Explore",
+    "tabProfile": "Profile"
+  },
+  "onboarding": {
+    "stepProgress": "{current}/{total}",
+    "continueAction": "Devam",
+    "enterApp": "NavGo’ya gir",
+    "resolvingLocation": "Konum alınıyor…",
+    "cityRequiredSnack": "Şehir veya ilçe gerekli",
+    "welcome": {
+      "title": "Günü gerçek yerlerle planla",
+      "body": "NavGo, konumunu ve tercihlerini alır; gerçek yerlerden rota ve gün planı oluşturur."
+    },
+    "name": {
+      "title": "Seni nasıl çağıralım?",
+      "body": "Profilinde görünecek kısa bir isim yeter.",
+      "hint": "Adın",
+      "errorRequired": "Sana nasıl sesleneceğimizi bilmemiz için isim gerekli"
+    },
+    "tempo": {
+      "title": "Günün temposu",
+      "body": "Kaç durak istediğin — mekan yoğunluğundan bağımsız tercihin.",
+      "calmSubtitle": "Az durak · bol nefes",
+      "balancedSubtitle": "Günün tadını çıkar",
+      "packedSubtitle": "Mümkün olduğunca keşfet"
+    },
+    "interests": {
+      "title": "İlgi alanların",
+      "body": "Birden fazla seçebilirsin. Mekan aramasını buna göre yönlendiririz.",
+      "errorMinOne": "Sana uygun mekanlar önerebilmemiz için en az bir ilgi alanı seç"
+    },
+    "group": {
+      "title": "Kimle geziyorsun?",
+      "body": "Tercihin rotanı ve durakları şekillendirir.",
+      "soloSubtitle": "Kendi temposunda keşif",
+      "coupleSubtitle": "İki kişilik rotalar",
+      "friendsSubtitle": "Paylaşılabilir duraklar",
+      "familySubtitle": "Aile dostu; bar/pub önerilmez"
+    },
+    "transport": {
+      "title": "Nasıl ilerleyelim?",
+      "body": "Gün boyunca nasıl dolaşacağını seç — rotan buna göre kurulur.",
+      "walkSubtitle": "Yaya rota",
+      "transitSubtitle": "Metro · otobüs · tramvay",
+      "driveSubtitle": "Araba ile bağlantı",
+      "bikeSubtitle": "Hafif tempo"
+    }
+  },
+  "plan": {
+    "selectLocation": "Konum seç",
+    "quickStart": "Hızlı başlangıç",
+    "quickStartNeedLocation": "Konumunu seç, ardından bir rota tipi seç.",
+    "quickStartWithArea": "{area} için bir rota tipi seç — ilgi alanlarına göre gerçek mekanlar.",
+    "defaultPlanTitle": "Gün planı",
+    "routeSummary": "{km} km · ~{mins} dk · {provider}",
+    "greetingMorning": "Günaydın",
+    "greetingAfternoon": "İyi günler",
+    "greetingEvening": "İyi akşamlar",
+    "greetingLine": "{greeting},",
+    "heroBadge": "Bugün",
+    "heroTitle": "Bir gün. Gerçek yerler.",
+    "heroBody": "Hazır bir rota seç veya kendi gününü oluştur — duraklar gerçek mekanlardan gelir.",
+    "heroCta": "Yeni gün planla",
+    "errorTitle": "Plan oluşturulamadı",
+    "tipBanner": "Yürüyüş için serin saatleri tercih et — öğleden sonra gölgeli sokaklar ve kısa molalar daha rahat.",
+    "openInGoogleMaps": "Google Maps’te aç",
+    "backToHome": "Ana sayfaya dön",
+    "statusSigningIn": "Oturum açılıyor…",
+    "statusParsingIntent": "LLM intent çıkarılıyor…",
+    "statusSearchingPlaces": "Mekanlar aranıyor…",
+    "statusSearchingPlacesTemplate": "Şablon ile mekanlar aranıyor…",
+    "statusPickingStops": "LLM durak seçiyor…",
+    "statusBuildingRoute": "Rota oluşturuluyor…",
+    "statusReady": "Plan hazır",
+    "errorDestinationRequired": "Destinasyon gerekli",
+    "errorTimeout": "İstek zaman aşımına uğradı. Bağlantını kontrol edip tekrar dene.",
+    "errorConnection": "Sunucuya bağlanılamadı. API'nin çalıştığından emin ol.",
+    "errorAuth": "Oturum açılamadı. Lütfen tekrar dene.",
+    "errorUnprocessable": "Seçilen mekanlar rota için uygun değil. Başka bir rota dene.",
+    "errorServer": "Sunucu hatası oluştu. Biraz sonra tekrar dene.",
+    "errorNotEnoughPlaces": "Bu bölgede yeterli mekan bulunamadı. Farklı bir destinasyon veya rota tipi dene.",
+    "errorGeneric": "Plan oluşturulamadı. Lütfen tekrar dene.",
+    "startSheet": {
+      "title": "Nereye gidelim?",
+      "body": "Konumundan gelen alanı kullan veya başka bir destinasyon yaz.",
+      "destinationLabel": "Destinasyon",
+      "destinationHint": "Örn. Kadıköy, İstanbul",
+      "useMyLocation": "Konumumu kullan",
+      "resolvingLocation": "Konum alınıyor…",
+      "areaRequiredSnack": "Önce şehir veya ilçe yaz"
+    },
+    "suggestion": {
+      "historicCenter": {
+        "title": "Tarihi merkez",
+        "subtitle": "Eski sokaklar · meydan · kahve"
+      },
+      "waterfront": {
+        "title": "Sahil / liman",
+        "subtitle": "Su kenarı · yürüyüş · manzara"
+      },
+      "coffeeRoute": {
+        "title": "Kahve rotası",
+        "subtitle": "Üç durak · sakin tempo"
+      },
+      "museumCulture": {
+        "title": "Müze & kültür",
+        "subtitle": "Müze · galeri · anıt"
+      }
+    }
+  },
+  "location": {
+    "requiredTitle": "Konum gerekli",
+    "failedTitle": "Konum alınamadı",
+    "manualTitle": "Şehir veya ilçe",
+    "manualHint": "Örn. Antalya, Muratpaşa",
+    "enterManually": "Manuel gir",
+    "openSettings": "Ayarlara git",
+    "settingsRequired": {
+      "serviceDisabled": "NavGo çalışmak için cihazında konum servisi açık olmalı. Lütfen ayarlardan konumu aç.",
+      "permissionDenied": "NavGo çalışmak için konum izni gerekli. Lütfen izin ver.",
+      "permissionDeniedForever": "NavGo çalışmak için konum izni gerekli. Ayarlardan NavGo için konumu aç.",
+      "fallback": "NavGo çalışmak için konum izni gerekli. Ayarlardan konumu aç."
+    },
+    "retryMessage": "Konum alınamadı. Tekrar deneyebilir veya şehri elle yazabilirsin.",
+    "manualEntry": {
+      "timeout": "Konum alınamadı. Şehir veya ilçe yazarak devam edebilirsin.",
+      "geocodeFailed": "Konumun alındı ama adres çözülemedi (ağ sorunu olabilir). Şehir veya ilçe yazarak devam edebilirsin.",
+      "unknown": "Bağlantı sorunu nedeniyle konum çözülemedi. Şehir veya ilçe yazarak devam edebilirsin.",
+      "noPermission": "Konum izni olmadan da şehir veya ilçe yazarak devam edebilirsin.",
+      "fallback": "Konum çözülemedi. Şehir veya ilçe yazarak devam edebilirsin."
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "noLocation": "Konum yok",
+    "labelLocation": "Konum",
+    "labelTempo": "Tempo",
+    "labelInterests": "İlgi",
+    "labelGroup": "Grup",
+    "labelTransport": "Taşıt",
+    "labelLanguage": "Dil",
+    "resetOnboarding": "Onboarding’i sıfırla"
+  },
+  "explore": {
+    "title": "Explore",
+    "subtitle": "Herhangi bir şehir veya bölge için fikirler. Plan sekmesinde destinasyonunu seç.",
+    "destinations": {
+      "istanbul": {
+        "name": "İstanbul",
+        "blurb": "Tarihi yarımada · Boğaz · kahve"
+      },
+      "cappadocia": {
+        "name": "Kapadokya",
+        "blurb": "Vadiler · gün doğumu · yürüyüş"
+      },
+      "rome": {
+        "name": "Roma",
+        "blurb": "Forum · Trastevere · gelato"
+      },
+      "lisbon": {
+        "name": "Lizbon",
+        "blurb": "Alfama · tramvay · miradouro"
+      },
+      "tokyo": {
+        "name": "Tokyo",
+        "blurb": "Mahalleler · tapınak · ramen"
+      },
+      "barcelona": {
+        "name": "Barselona",
+        "blurb": "Gotik mahalle · plaj · tapas"
+      }
+    }
+  },
+  "trips": {
+    "title": "Trips",
+    "subtitle": "Kaydettiğin gün planları burada listelenir.",
+    "emptyTitle": "Henüz kayıtlı trip yok",
+    "emptyBody": "Plan sekmesinden bir gün oluştur, sonra burada görünecek."
+  },
+  "splash": {
+    "tagline": "Gerçek yerlerle gün planı",
+    "continueAction": "Devam"
+  }
+}

@@ -1,36 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
+import 'package:navgo_mobile/i18n/strings.g.dart';
 
 class ExploreView extends StatelessWidget {
   const ExploreView({super.key});
 
-  /// Inspiration destinations — not tied to a single home city.
-  static const _areas = <(String, String, IconData)>[
-    ('İstanbul', 'Tarihi yarımada · Boğaz · kahve', Icons.mosque_outlined),
-    ('Kapadokya', 'Vadiler · gün doğumu · yürüyüş', Icons.terrain_outlined),
-    ('Roma', 'Forum · Trastevere · gelato', Icons.account_balance_outlined),
-    ('Lizbon', 'Alfama · tramvay · miradouro', Icons.tram_outlined),
-    ('Tokyo', 'Mahalleler · tapınak · ramen', Icons.temple_buddhist_outlined),
-    ('Barselona', 'Gotik mahalle · plaj · tapas', Icons.beach_access_outlined),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
+    final areas = <(String, String, IconData)>[
+      (
+        t.explore.destinations.istanbul.name,
+        t.explore.destinations.istanbul.blurb,
+        Icons.mosque_outlined,
+      ),
+      (
+        t.explore.destinations.cappadocia.name,
+        t.explore.destinations.cappadocia.blurb,
+        Icons.terrain_outlined,
+      ),
+      (
+        t.explore.destinations.rome.name,
+        t.explore.destinations.rome.blurb,
+        Icons.account_balance_outlined,
+      ),
+      (
+        t.explore.destinations.lisbon.name,
+        t.explore.destinations.lisbon.blurb,
+        Icons.tram_outlined,
+      ),
+      (
+        t.explore.destinations.tokyo.name,
+        t.explore.destinations.tokyo.blurb,
+        Icons.temple_buddhist_outlined,
+      ),
+      (
+        t.explore.destinations.barcelona.name,
+        t.explore.destinations.barcelona.blurb,
+        Icons.beach_access_outlined,
+      ),
+    ];
+
     return Scaffold(
       backgroundColor: context.cBackground,
       body: SafeArea(
         child: ListView(
           padding: context.paddingNormal,
           children: [
-            Text('Explore', style: context.textTheme.headlineMedium),
+            Text(t.explore.title, style: context.textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(
-              'Herhangi bir şehir veya bölge için fikirler. Plan sekmesinde destinasyonunu seç.',
+              t.explore.subtitle,
               style: context.textTheme.bodyMedium,
             ),
             const SizedBox(height: 20),
-            for (final a in _areas) ...[
+            for (final a in areas) ...[
               Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),

@@ -319,7 +319,7 @@ packages:
     source: hosted
     version: "1.0.3"
   flutter_localizations:
-    dependency: transitive
+    dependency: "direct main"
     description: flutter
     source: sdk
     version: "0.0.0"
@@ -931,7 +931,7 @@ packages:
     source: sdk
     version: "0.0.0"
   slang:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: slang
       sha256: "430749837528bb692b5ee03699fadab90d0d4a6dfbf42aab28e81df8da4c2fb8"
@@ -939,7 +939,7 @@ packages:
     source: hosted
     version: "4.19.0"
   slang_flutter:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: slang_flutter
       sha256: "2348a39432c48d7c890a2a1e3409b9faae3e49f117fe56d390d4236de8d064f4"

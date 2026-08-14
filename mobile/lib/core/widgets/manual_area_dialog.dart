@@ -1,70 +1,83 @@
 import 'package:flutter/material.dart';
 import 'package:navgo_mobile/data/location_service.dart';
+import 'package:navgo_mobile/i18n/strings.g.dart';
 
-/// Permission or location services must be enabled — no manual city entry.
-Future<bool> showLocationRequiredDialog(
+enum LocationPromptChoice { dismiss, retry, manual }
+
+/// Permission / location services — settings, retry, or manual city entry.
+Future<LocationPromptChoice> showLocationRequiredDialog(
   BuildContext context, {
   required LocationFailure? failure,
 }) async {
-  final result = await showDialog<bool>(
+  final t = context.t;
+  final result = await showDialog<LocationPromptChoice>(
     context: context,
     barrierDismissible: false,
     builder: (ctx) => AlertDialog(
-      title: const Text('Konum gerekli'),
+      title: Text(t.location.requiredTitle),
       content: Text(
         LocationService.settingsRequiredMessage(failure),
         style: Theme.of(ctx).textTheme.bodyMedium,
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Vazgeç'),
+          onPressed: () => Navigator.pop(ctx, LocationPromptChoice.dismiss),
+          child: Text(t.common.cancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, LocationPromptChoice.manual),
+          child: Text(t.location.enterManually),
         ),
         TextButton(
           onPressed: () async {
             await LocationService.openSettingsForFailure(failure);
           },
-          child: const Text('Ayarlara git'),
+          child: Text(t.location.openSettings),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Tekrar dene'),
+          onPressed: () => Navigator.pop(ctx, LocationPromptChoice.retry),
+          child: Text(t.common.retry),
         ),
       ],
     ),
   );
-  return result ?? false;
+  return result ?? LocationPromptChoice.dismiss;
 }
 
-/// GPS timeout while permission is granted — retry only, no manual entry.
-Future<bool> showLocationRetryDialog(
+/// GPS / resolve failed — retry or type city manually.
+Future<LocationPromptChoice> showLocationRetryDialog(
   BuildContext context, {
   required LocationFailure? failure,
 }) async {
-  final result = await showDialog<bool>(
+  final t = context.t;
+  final result = await showDialog<LocationPromptChoice>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Konum alınamadı'),
+      title: Text(t.location.failedTitle),
       content: Text(
         LocationService.retryMessage(failure),
         style: Theme.of(ctx).textTheme.bodyMedium,
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Vazgeç'),
+          onPressed: () => Navigator.pop(ctx, LocationPromptChoice.dismiss),
+          child: Text(t.common.cancel),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Tekrar dene'),
+          onPressed: () => Navigator.pop(ctx, LocationPromptChoice.manual),
+          child: Text(t.location.enterManually),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, LocationPromptChoice.retry),
+          child: Text(t.common.retry),
         ),
       ],
     ),
   );
-  return result ?? false;
+  return result ?? LocationPromptChoice.dismiss;
 }
 
-/// Manual city entry when permission is OK but reverse geocoding / network failed.
+/// Manual city / district entry.
 Future<String?> showManualAreaDialog(
   BuildContext context, {
   String initialValue = '',
@@ -79,6 +92,20 @@ Future<String?> showManualAreaDialog(
   );
 }
 
+Future<String?> _readManualArea(
+  BuildContext context, {
+  required LocationFailure? failure,
+  required String initialValue,
+}) async {
+  final manual = await showManualAreaDialog(
+    context,
+    initialValue: initialValue,
+    failure: failure,
+  );
+  final trimmed = manual?.trim();
+  return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+}
+
 /// Handles a failed location resolve: settings, retry, or manual entry.
 Future<String?> promptLocationAreaAfterFailure(
   BuildContext context, {
@@ -88,43 +115,37 @@ Future<String?> promptLocationAreaAfterFailure(
 }) async {
   if (!context.mounted) return null;
 
+  final LocationPromptChoice choice;
   if (LocationService.requiresSettings(failure)) {
-    final retry = await showLocationRequiredDialog(context, failure: failure);
-    if (!retry || !context.mounted) return null;
-    final outcome = await resolveAgain();
-    if (outcome.isOk && outcome.result!.area.isNotEmpty) {
-      return outcome.result!.area;
-    }
-    return promptLocationAreaAfterFailure(
-      context,
-      failure: outcome.failure,
-      resolveAgain: resolveAgain,
-      initialValue: initialValue,
-    );
+    choice = await showLocationRequiredDialog(context, failure: failure);
+  } else {
+    choice = await showLocationRetryDialog(context, failure: failure);
   }
 
-  if (LocationService.allowsManualEntry(failure)) {
-    final manual = await showManualAreaDialog(
-      context,
-      initialValue: initialValue,
-      failure: failure,
-    );
-    final trimmed = manual?.trim();
-    return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
-  }
+  if (!context.mounted) return null;
 
-  final retry = await showLocationRetryDialog(context, failure: failure);
-  if (!retry || !context.mounted) return null;
-  final outcome = await resolveAgain();
-  if (outcome.isOk && outcome.result!.area.isNotEmpty) {
-    return outcome.result!.area;
+  switch (choice) {
+    case LocationPromptChoice.dismiss:
+      return null;
+    case LocationPromptChoice.manual:
+      return _readManualArea(
+        context,
+        failure: failure,
+        initialValue: initialValue,
+      );
+    case LocationPromptChoice.retry:
+      final outcome = await resolveAgain();
+      if (outcome.isOk && outcome.result!.area.isNotEmpty) {
+        return outcome.result!.area;
+      }
+      if (!context.mounted) return null;
+      return promptLocationAreaAfterFailure(
+        context,
+        failure: outcome.failure,
+        resolveAgain: resolveAgain,
+        initialValue: initialValue,
+      );
   }
-  return promptLocationAreaAfterFailure(
-    context,
-    failure: outcome.failure,
-    resolveAgain: resolveAgain,
-    initialValue: initialValue,
-  );
 }
 
 class _ManualAreaDialog extends StatefulWidget {
@@ -157,8 +178,9 @@ class _ManualAreaDialogState extends State<_ManualAreaDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     return AlertDialog(
-      title: const Text('Şehir veya ilçe'),
+      title: Text(t.location.manualTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,8 +194,8 @@ class _ManualAreaDialogState extends State<_ManualAreaDialog> {
             controller: _ctrl,
             autofocus: true,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              hintText: 'Örn. Antalya, Muratpaşa',
+            decoration: InputDecoration(
+              hintText: t.location.manualHint,
             ),
             onSubmitted: (v) => Navigator.pop(context, v),
           ),
@@ -182,11 +204,11 @@ class _ManualAreaDialogState extends State<_ManualAreaDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Vazgeç'),
+          child: Text(t.common.cancel),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, _ctrl.text),
-          child: const Text('Tamam'),
+          child: Text(t.common.ok),
         ),
       ],
     );
