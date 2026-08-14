@@ -6,6 +6,7 @@ import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
 import 'package:navgo_mobile/core/widgets/primary_button.dart';
 import 'package:navgo_mobile/data/session_repository.dart';
+import 'package:navgo_mobile/i18n/strings.g.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key, required this.session});
@@ -60,6 +61,7 @@ class _SplashViewState extends State<SplashView> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -71,13 +73,13 @@ class _SplashViewState extends State<SplashView> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  'NavGo',
+                  t.common.brand,
                   textAlign: TextAlign.center,
                   style: context.textTheme.headlineLarge,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Grounded day plans',
+                  t.splash.tagline,
                   textAlign: TextAlign.center,
                   style: context.textTheme.bodyMedium?.copyWith(
                     color: AppColors.neutral,
@@ -86,7 +88,7 @@ class _SplashViewState extends State<SplashView> {
                 const SizedBox(height: 28),
                 if (_showContinue)
                   PrimaryButton(
-                    label: 'Devam',
+                    label: t.splash.continueAction,
                     onPressed: _goNext,
                   )
                 else

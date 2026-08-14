@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
+import 'package:navgo_mobile/core/widgets/locale_dropdown.dart';
 import 'package:navgo_mobile/core/widgets/manual_area_dialog.dart';
 import 'package:navgo_mobile/core/widgets/primary_button.dart';
 import 'package:navgo_mobile/data/location_service.dart';
 import 'package:navgo_mobile/data/session_repository.dart';
+import 'package:navgo_mobile/i18n/strings.g.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({
@@ -63,14 +65,11 @@ class _OnboardingViewState extends State<OnboardingView> {
   Future<void> _next() async {
     if (_saving) return;
     if (_index == 1 && _nameCtrl.text.trim().isEmpty) {
-      setState(() => _nameError = 'Sana nasıl sesleneceğimizi bilmemiz için isim gerekli');
+      setState(() => _nameError = t.onboarding.name.errorRequired);
       return;
     }
     if (_index == 3 && _interests.isEmpty) {
-      setState(
-        () => _interestsError =
-            'Sana uygun mekanlar önerebilmemiz için en az bir ilgi alanı seç',
-      );
+      setState(() => _interestsError = t.onboarding.interests.errorMinOne);
       return;
     }
     if (_index >= _steps - 1) {
@@ -96,6 +95,12 @@ class _OnboardingViewState extends State<OnboardingView> {
     );
   }
 
+  Future<void> _setLocale(AppLocale locale) async {
+    await widget.session.setLocaleCode(locale.languageCode);
+    await LocaleSettings.setLocale(locale);
+    if (mounted) setState(() {});
+  }
+
   Future<void> _finish() async {
     if (_saving) return;
     setState(() => _saving = true);
@@ -105,6 +110,7 @@ class _OnboardingViewState extends State<OnboardingView> {
       if (outcome.result != null && outcome.result!.area.isNotEmpty) {
         area = outcome.result!.area;
       } else {
+        if (!mounted) return;
         final manual = await promptLocationAreaAfterFailure(
           context,
           failure: outcome.failure,
@@ -113,7 +119,7 @@ class _OnboardingViewState extends State<OnboardingView> {
         if (manual == null || manual.trim().isEmpty) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Şehir veya ilçe gerekli')),
+              SnackBar(content: Text(t.onboarding.cityRequiredSnack)),
             );
           }
           return;
@@ -138,6 +144,7 @@ class _OnboardingViewState extends State<OnboardingView> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     final top = MediaQuery.paddingOf(context).top;
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -152,25 +159,21 @@ class _OnboardingViewState extends State<OnboardingView> {
                   IconButton(
                     onPressed: _saving ? null : _previous,
                     icon: const Icon(Icons.arrow_back),
-                    tooltip: 'Geri',
+                    tooltip: t.common.back,
                     visualDensity: VisualDensity.compact,
                   )
                 else
                   const SizedBox(width: 48),
                 Expanded(
                   child: Text(
-                    'NavGo',
+                    t.common.brand,
                     style: context.textTheme.titleLarge,
                     textAlign: TextAlign.center,
                   ),
                 ),
-                SizedBox(
-                  width: 48,
-                  child: Text(
-                    '${_index + 1}/$_steps',
-                    style: context.textTheme.labelLarge,
-                    textAlign: TextAlign.end,
-                  ),
+                LocaleCodeDropdown(
+                  value: LocaleSettings.currentLocale,
+                  onChanged: _setLocale,
                 ),
               ],
             ),
@@ -178,14 +181,28 @@ class _OnboardingViewState extends State<OnboardingView> {
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: (_index + 1) / _steps,
-                minHeight: 4,
-                backgroundColor: AppColors.surfaceMuted,
-                color: AppColors.primary,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: (_index + 1) / _steps,
+                      minHeight: 4,
+                      backgroundColor: AppColors.surfaceMuted,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  t.onboarding.stepProgress(
+                    current: '${_index + 1}',
+                    total: '$_steps',
+                  ),
+                  style: context.textTheme.labelLarge,
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -229,8 +246,10 @@ class _OnboardingViewState extends State<OnboardingView> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             child: PrimaryButton(
               label: _saving
-                  ? 'Konum alınıyor…'
-                  : (_index >= _steps - 1 ? 'NavGo’ya gir' : 'Devam'),
+                  ? t.onboarding.resolvingLocation
+                  : (_index >= _steps - 1
+                      ? t.onboarding.enterApp
+                      : t.onboarding.continueAction),
               onPressed: _saving ? null : _next,
             ),
           ),
@@ -245,6 +264,7 @@ class _WelcomeStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       children: [
@@ -259,12 +279,12 @@ class _WelcomeStep extends StatelessWidget {
         ),
         const SizedBox(height: 22),
         Text(
-          'Günü gerçek yerlerle planla',
+          t.onboarding.welcome.title,
           style: context.textTheme.headlineMedium,
         ),
         const SizedBox(height: 8),
         Text(
-          'NavGo, konumunu ve tercihlerini alır; gerçek yerlerden rota ve gün planı oluşturur.',
+          t.onboarding.welcome.body,
           style: context.textTheme.bodyLarge?.copyWith(color: AppColors.neutral),
         ),
       ],
@@ -280,13 +300,14 @@ class _NameStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       children: [
-        Text('Seni nasıl çağıralım?', style: context.textTheme.headlineMedium),
+        Text(t.onboarding.name.title, style: context.textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
-          'Profilinde görünecek kısa bir isim yeter.',
+          t.onboarding.name.body,
           style: context.textTheme.bodyLarge?.copyWith(color: AppColors.neutral),
         ),
         const SizedBox(height: 20),
@@ -294,7 +315,7 @@ class _NameStep extends StatelessWidget {
           controller: controller,
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
-            hintText: 'Adın',
+            hintText: t.onboarding.name.hint,
             errorText: errorText,
             errorMaxLines: 3,
           ),
@@ -312,18 +333,34 @@ class _TempoStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     final options = <(String, String, String, IconData)>[
-      ('calm', 'Sakin', 'Az durak · bol nefes', Icons.spa_outlined),
-      ('balanced', 'Dengeli', 'Günün tadını çıkar', Icons.balance_outlined),
-      ('packed', 'Dolu', 'Mümkün olduğunca keşfet', Icons.bolt_outlined),
+      (
+        'calm',
+        t.common.tempo.calm,
+        t.onboarding.tempo.calmSubtitle,
+        Icons.spa_outlined,
+      ),
+      (
+        'balanced',
+        t.common.tempo.balanced,
+        t.onboarding.tempo.balancedSubtitle,
+        Icons.balance_outlined,
+      ),
+      (
+        'packed',
+        t.common.tempo.packed,
+        t.onboarding.tempo.packedSubtitle,
+        Icons.bolt_outlined,
+      ),
     ];
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       children: [
-        Text('Günün temposu', style: context.textTheme.headlineMedium),
+        Text(t.onboarding.tempo.title, style: context.textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
-          'Kaç durak istediğin — mekan yoğunluğundan bağımsız tercihin.',
+          t.onboarding.tempo.body,
           style: context.textTheme.bodyLarge?.copyWith(color: AppColors.neutral),
         ),
         const SizedBox(height: 20),
@@ -353,23 +390,26 @@ class _InterestsStep extends StatelessWidget {
   final ValueChanged<String> onToggle;
   final String? errorText;
 
-  static const _options = <(String, String, IconData)>[
-    ('history', 'Tarih', Icons.account_balance_outlined),
-    ('food', 'Yemek', Icons.restaurant_outlined),
-    ('nature', 'Doğa', Icons.park_outlined),
-    ('art', 'Sanat', Icons.palette_outlined),
-    ('shopping', 'Alışveriş', Icons.shopping_bag_outlined),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
+    final options = <(String, String, IconData)>[
+      ('history', t.common.interest.history, Icons.account_balance_outlined),
+      ('food', t.common.interest.food, Icons.restaurant_outlined),
+      ('nature', t.common.interest.nature, Icons.park_outlined),
+      ('art', t.common.interest.art, Icons.palette_outlined),
+      ('shopping', t.common.interest.shopping, Icons.shopping_bag_outlined),
+    ];
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       children: [
-        Text('İlgi alanların', style: context.textTheme.headlineMedium),
+        Text(
+          t.onboarding.interests.title,
+          style: context.textTheme.headlineMedium,
+        ),
         const SizedBox(height: 8),
         Text(
-          'Birden fazla seçebilirsin. Mekan aramasını buna göre yönlendiririz.',
+          t.onboarding.interests.body,
           style: context.textTheme.bodyLarge?.copyWith(color: AppColors.neutral),
         ),
         const SizedBox(height: 20),
@@ -377,7 +417,7 @@ class _InterestsStep extends StatelessWidget {
           spacing: 10,
           runSpacing: 10,
           children: [
-            for (final o in _options)
+            for (final o in options)
               Builder(
                 builder: (context) {
                   final isSelected = selected.contains(o.$1);
@@ -429,24 +469,40 @@ class _GroupStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     final options = <(String, String, String, IconData)>[
-      ('solo', 'Yalnız', 'Kendi temposunda keşif', Icons.person_outline),
-      ('couple', 'Çift', 'İki kişilik rotalar', Icons.favorite_outline),
-      ('friends', 'Arkadaş', 'Paylaşılabilir duraklar', Icons.groups_outlined),
+      (
+        'solo',
+        t.common.group.solo,
+        t.onboarding.group.soloSubtitle,
+        Icons.person_outline,
+      ),
+      (
+        'couple',
+        t.common.group.couple,
+        t.onboarding.group.coupleSubtitle,
+        Icons.favorite_outline,
+      ),
+      (
+        'friends',
+        t.common.group.friends,
+        t.onboarding.group.friendsSubtitle,
+        Icons.groups_outlined,
+      ),
       (
         'family',
-        'Aile',
-        'Aile dostu; bar/pub önerilmez',
+        t.common.group.family,
+        t.onboarding.group.familySubtitle,
         Icons.family_restroom_outlined,
       ),
     ];
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       children: [
-        Text('Kimle geziyorsun?', style: context.textTheme.headlineMedium),
+        Text(t.onboarding.group.title, style: context.textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
-          'Tercihin rotanı ve durakları şekillendirir.',
+          t.onboarding.group.body,
           style: context.textTheme.bodyLarge?.copyWith(color: AppColors.neutral),
         ),
         const SizedBox(height: 20),
@@ -473,19 +529,43 @@ class _TransportStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     final options = <(String, String, String, IconData)>[
-      ('walk', 'Yürüyüş', 'Yaya rota', Icons.directions_walk),
-      ('transit', 'Toplu taşıma', 'Metro · otobüs · tramvay', Icons.directions_transit),
-      ('drive', 'Araç', 'Araba ile bağlantı', Icons.directions_car),
-      ('bike', 'Bisiklet', 'Hafif tempo', Icons.directions_bike),
+      (
+        'walk',
+        t.common.transport.walk,
+        t.onboarding.transport.walkSubtitle,
+        Icons.directions_walk,
+      ),
+      (
+        'transit',
+        t.common.transport.transit,
+        t.onboarding.transport.transitSubtitle,
+        Icons.directions_transit,
+      ),
+      (
+        'drive',
+        t.common.transport.drive,
+        t.onboarding.transport.driveSubtitle,
+        Icons.directions_car,
+      ),
+      (
+        'bike',
+        t.common.transport.bike,
+        t.onboarding.transport.bikeSubtitle,
+        Icons.directions_bike,
+      ),
     ];
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       children: [
-        Text('Nasıl ilerleyelim?', style: context.textTheme.headlineMedium),
+        Text(
+          t.onboarding.transport.title,
+          style: context.textTheme.headlineMedium,
+        ),
         const SizedBox(height: 8),
         Text(
-          'Gün boyunca nasıl dolaşacağını seç — rotan buna göre kurulur.',
+          t.onboarding.transport.body,
           style: context.textTheme.bodyLarge?.copyWith(color: AppColors.neutral),
         ),
         const SizedBox(height: 20),

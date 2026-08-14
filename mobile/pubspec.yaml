@@ -42,6 +42,10 @@ dependencies:
   masterfabric_core: 1.0.0
   geolocator: ^14.0.2
   geocoding: ^4.0.0
+  slang: ^4.19.0
+  slang_flutter: ^4.19.0
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:

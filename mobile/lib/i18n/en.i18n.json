@@ -1,0 +1,222 @@
+{
+  "common": {
+    "brand": "NavGo",
+    "cancel": "Cancel",
+    "continueAction": "Continue",
+    "ok": "OK",
+    "retry": "Try again",
+    "back": "Back",
+    "emDash": "—",
+    "defaultTravelerName": "Traveler",
+    "tempo": {
+      "calm": "Calm",
+      "balanced": "Balanced",
+      "packed": "Packed"
+    },
+    "group": {
+      "solo": "Solo",
+      "couple": "Couple",
+      "friends": "Friends",
+      "family": "Family"
+    },
+    "transport": {
+      "walk": "Walk",
+      "transit": "Transit",
+      "drive": "Drive",
+      "bike": "Bike"
+    },
+    "interest": {
+      "history": "History",
+      "food": "Food",
+      "nature": "Nature",
+      "art": "Art",
+      "shopping": "Shopping"
+    }
+  },
+  "shell": {
+    "tabPlan": "Plan",
+    "tabTrips": "Trips",
+    "tabExplore": "Explore",
+    "tabProfile": "Profile"
+  },
+  "onboarding": {
+    "stepProgress": "{current}/{total}",
+    "continueAction": "Continue",
+    "enterApp": "Enter NavGo",
+    "resolvingLocation": "Getting location…",
+    "cityRequiredSnack": "City or district is required",
+    "welcome": {
+      "title": "Plan the day with real places",
+      "body": "NavGo uses your location and preferences to build a day plan from real venues."
+    },
+    "name": {
+      "title": "What should we call you?",
+      "body": "A short name for your profile is enough.",
+      "hint": "Your name",
+      "errorRequired": "We need a name so we know how to address you"
+    },
+    "tempo": {
+      "title": "Day tempo",
+      "body": "How many stops you want — independent of venue density.",
+      "calmSubtitle": "Fewer stops · more breathing room",
+      "balancedSubtitle": "Enjoy the day at ease",
+      "packedSubtitle": "Explore as much as you can"
+    },
+    "interests": {
+      "title": "Your interests",
+      "body": "Pick one or more. We’ll bias place search accordingly.",
+      "errorMinOne": "Select at least one interest so we can suggest fitting places"
+    },
+    "group": {
+      "title": "Who are you with?",
+      "body": "Your choice shapes the route and stops.",
+      "soloSubtitle": "Explore at your own pace",
+      "coupleSubtitle": "Routes for two",
+      "friendsSubtitle": "Shareable stops",
+      "familySubtitle": "Family-friendly; no bar/pub picks"
+    },
+    "transport": {
+      "title": "How will you get around?",
+      "body": "Choose how you’ll move through the day — the route follows.",
+      "walkSubtitle": "On foot",
+      "transitSubtitle": "Metro · bus · tram",
+      "driveSubtitle": "By car",
+      "bikeSubtitle": "Easy pace"
+    }
+  },
+  "plan": {
+    "selectLocation": "Select location",
+    "quickStart": "Quick start",
+    "quickStartNeedLocation": "Pick a location, then choose a route type.",
+    "quickStartWithArea": "Pick a route type for {area} — real places based on your interests.",
+    "defaultPlanTitle": "Day plan",
+    "routeSummary": "{km} km · ~{mins} min · {provider}",
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "greetingLine": "{greeting},",
+    "heroBadge": "Today",
+    "heroTitle": "One day. Real places.",
+    "heroBody": "Pick a ready route or build your own — stops come from real venues.",
+    "heroCta": "Plan a new day",
+    "errorTitle": "Couldn’t create the plan",
+    "tipBanner": "Prefer cooler hours for walking — shade and short breaks help in the afternoon.",
+    "openInGoogleMaps": "Open in Google Maps",
+    "backToHome": "Back to home",
+    "statusSigningIn": "Signing in…",
+    "statusParsingIntent": "Parsing intent with LLM…",
+    "statusSearchingPlaces": "Searching places…",
+    "statusSearchingPlacesTemplate": "Searching places with template…",
+    "statusPickingStops": "Picking stops with LLM…",
+    "statusBuildingRoute": "Building route…",
+    "statusReady": "Plan ready",
+    "errorDestinationRequired": "Destination is required",
+    "errorTimeout": "The request timed out. Check your connection and try again.",
+    "errorConnection": "Couldn’t reach the server. Make sure the API is running.",
+    "errorAuth": "Couldn’t sign in. Please try again.",
+    "errorUnprocessable": "Those places don’t work for a route. Try another route type.",
+    "errorServer": "A server error occurred. Try again shortly.",
+    "errorNotEnoughPlaces": "Not enough places found in this area. Try another destination or route type.",
+    "errorGeneric": "Couldn’t create the plan. Please try again.",
+    "startSheet": {
+      "title": "Where to?",
+      "body": "Use the area from your location or type another destination.",
+      "destinationLabel": "Destination",
+      "destinationHint": "e.g. Kadıköy, Istanbul",
+      "useMyLocation": "Use my location",
+      "resolvingLocation": "Getting location…",
+      "areaRequiredSnack": "Enter a city or district first"
+    },
+    "suggestion": {
+      "historicCenter": {
+        "title": "Historic center",
+        "subtitle": "Old streets · square · coffee"
+      },
+      "waterfront": {
+        "title": "Waterfront / harbor",
+        "subtitle": "By the water · walk · views"
+      },
+      "coffeeRoute": {
+        "title": "Coffee route",
+        "subtitle": "Three stops · calm pace"
+      },
+      "museumCulture": {
+        "title": "Museum & culture",
+        "subtitle": "Museum · gallery · monument"
+      }
+    }
+  },
+  "location": {
+    "requiredTitle": "Location required",
+    "failedTitle": "Couldn’t get location",
+    "manualTitle": "City or district",
+    "manualHint": "e.g. Antalya, Muratpaşa",
+    "enterManually": "Enter manually",
+    "openSettings": "Open settings",
+    "settingsRequired": {
+      "serviceDisabled": "NavGo needs location services on. Please turn location on in Settings.",
+      "permissionDenied": "NavGo needs location permission. Please allow it.",
+      "permissionDeniedForever": "NavGo needs location permission. Enable it for NavGo in Settings.",
+      "fallback": "NavGo needs location permission. Turn it on in Settings."
+    },
+    "retryMessage": "Couldn’t get location. You can try again or type the city.",
+    "manualEntry": {
+      "timeout": "Couldn’t get location. You can continue by typing a city or district.",
+      "geocodeFailed": "Got your coordinates but couldn’t resolve the address (network issue?). Type a city or district to continue.",
+      "unknown": "Couldn’t resolve location due to a connection issue. Type a city or district to continue.",
+      "noPermission": "You can still continue by typing a city or district without location permission.",
+      "fallback": "Couldn’t resolve location. Type a city or district to continue."
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "noLocation": "No location",
+    "labelLocation": "Location",
+    "labelTempo": "Tempo",
+    "labelInterests": "Interests",
+    "labelGroup": "Group",
+    "labelTransport": "Transport",
+    "labelLanguage": "Language",
+    "resetOnboarding": "Reset onboarding"
+  },
+  "explore": {
+    "title": "Explore",
+    "subtitle": "Ideas for any city or region. Pick your destination on the Plan tab.",
+    "destinations": {
+      "istanbul": {
+        "name": "Istanbul",
+        "blurb": "Historic peninsula · Bosphorus · coffee"
+      },
+      "cappadocia": {
+        "name": "Cappadocia",
+        "blurb": "Valleys · sunrise · walks"
+      },
+      "rome": {
+        "name": "Rome",
+        "blurb": "Forum · Trastevere · gelato"
+      },
+      "lisbon": {
+        "name": "Lisbon",
+        "blurb": "Alfama · tram · miradouro"
+      },
+      "tokyo": {
+        "name": "Tokyo",
+        "blurb": "Neighborhoods · temples · ramen"
+      },
+      "barcelona": {
+        "name": "Barcelona",
+        "blurb": "Gothic quarter · beach · tapas"
+      }
+    }
+  },
+  "trips": {
+    "title": "Trips",
+    "subtitle": "Your saved day plans will show up here.",
+    "emptyTitle": "No saved trips yet",
+    "emptyBody": "Create a day on the Plan tab — it will appear here."
+  },
+  "splash": {
+    "tagline": "Grounded day plans",
+    "continueAction": "Continue"
+  }
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:navgo_mobile/data/location_service.dart';
+import 'package:navgo_mobile/i18n/strings.g.dart';
 
 enum LocationPromptChoice { dismiss, retry, manual }
 
@@ -8,11 +9,12 @@ Future<LocationPromptChoice> showLocationRequiredDialog(
   BuildContext context, {
   required LocationFailure? failure,
 }) async {
+  final t = context.t;
   final result = await showDialog<LocationPromptChoice>(
     context: context,
     barrierDismissible: false,
     builder: (ctx) => AlertDialog(
-      title: const Text('Konum gerekli'),
+      title: Text(t.location.requiredTitle),
       content: Text(
         LocationService.settingsRequiredMessage(failure),
         style: Theme.of(ctx).textTheme.bodyMedium,
@@ -20,21 +22,21 @@ Future<LocationPromptChoice> showLocationRequiredDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, LocationPromptChoice.dismiss),
-          child: const Text('Vazgeç'),
+          child: Text(t.common.cancel),
         ),
         TextButton(
           onPressed: () => Navigator.pop(ctx, LocationPromptChoice.manual),
-          child: const Text('Manuel gir'),
+          child: Text(t.location.enterManually),
         ),
         TextButton(
           onPressed: () async {
             await LocationService.openSettingsForFailure(failure);
           },
-          child: const Text('Ayarlara git'),
+          child: Text(t.location.openSettings),
         ),
         TextButton(
           onPressed: () => Navigator.pop(ctx, LocationPromptChoice.retry),
-          child: const Text('Tekrar dene'),
+          child: Text(t.common.retry),
         ),
       ],
     ),
@@ -47,10 +49,11 @@ Future<LocationPromptChoice> showLocationRetryDialog(
   BuildContext context, {
   required LocationFailure? failure,
 }) async {
+  final t = context.t;
   final result = await showDialog<LocationPromptChoice>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Konum alınamadı'),
+      title: Text(t.location.failedTitle),
       content: Text(
         LocationService.retryMessage(failure),
         style: Theme.of(ctx).textTheme.bodyMedium,
@@ -58,15 +61,15 @@ Future<LocationPromptChoice> showLocationRetryDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, LocationPromptChoice.dismiss),
-          child: const Text('Vazgeç'),
+          child: Text(t.common.cancel),
         ),
         TextButton(
           onPressed: () => Navigator.pop(ctx, LocationPromptChoice.manual),
-          child: const Text('Manuel gir'),
+          child: Text(t.location.enterManually),
         ),
         TextButton(
           onPressed: () => Navigator.pop(ctx, LocationPromptChoice.retry),
-          child: const Text('Tekrar dene'),
+          child: Text(t.common.retry),
         ),
       ],
     ),
@@ -175,8 +178,9 @@ class _ManualAreaDialogState extends State<_ManualAreaDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     return AlertDialog(
-      title: const Text('Şehir veya ilçe'),
+      title: Text(t.location.manualTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,8 +194,8 @@ class _ManualAreaDialogState extends State<_ManualAreaDialog> {
             controller: _ctrl,
             autofocus: true,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              hintText: 'Örn. Antalya, Muratpaşa',
+            decoration: InputDecoration(
+              hintText: t.location.manualHint,
             ),
             onSubmitted: (v) => Navigator.pop(context, v),
           ),
@@ -200,11 +204,11 @@ class _ManualAreaDialogState extends State<_ManualAreaDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Vazgeç'),
+          child: Text(t.common.cancel),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, _ctrl.text),
-          child: const Text('Tamam'),
+          child: Text(t.common.ok),
         ),
       ],
     );

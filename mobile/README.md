@@ -44,6 +44,7 @@ masterfabric_core:
 ```text
 lib/
   flavors/                            # main_dev / main_prod + app_flavor
+  i18n/                               # slang: tr/en/ru.i18n.json + strings.g.dart
   app/app.dart + routes.dart          # GoRouter + shell (NavGoRoutes)
   data/session_repository.dart        # onboarding prefs
   views/
@@ -67,6 +68,13 @@ assets/config/
 Both flavors share the same app name and bundle id (**NavGo**). Which flavor is running is chosen by `--flavor` / `-t`.
 
 API base URL lives in `assets/config/app_config_*.json` (dev currently points at Render).
+
+## i18n (slang)
+
+- Sources: `lib/i18n/tr.i18n.json`, `lib/i18n/en.i18n.json`, `lib/i18n/ru.i18n.json`
+- Generate: `dart run slang` → `lib/i18n/strings.g.dart`
+- Usage: `context.t.plan.heroTitle` (or `t.…`)
+- Language: Profile / onboarding dropdown → TR / EN / RU (stored in session)
 
 ## Design
 

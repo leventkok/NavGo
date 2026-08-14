@@ -53,7 +53,7 @@
   },
   "localizationConfiguration": {
     "defaultLocale": "tr",
-    "supportedLocales": ["tr", "en"],
+    "supportedLocales": ["tr", "en", "ru"],
     "fallbackLocale": "en"
   },
   "storageConfiguration": {
