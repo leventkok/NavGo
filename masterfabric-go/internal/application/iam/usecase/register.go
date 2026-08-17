@@ -9,24 +9,31 @@ import (
 	"github.com/leventkok/NavGo/internal/domain/iam/model"
 	"github.com/leventkok/NavGo/internal/domain/iam/repository"
 	"github.com/leventkok/NavGo/internal/domain/iam/service"
+	secRepo "github.com/leventkok/NavGo/internal/domain/security/repository"
+	secUC "github.com/leventkok/NavGo/internal/application/security/usecase"
 	domainErr "github.com/leventkok/NavGo/internal/shared/errors"
 	"github.com/leventkok/NavGo/internal/shared/events"
 )
 
 // RegisterUseCase handles user registration.
 type RegisterUseCase struct {
-	userRepo repository.UserRepository
-	auth     service.AuthService
-	eventBus events.EventBus
+	userRepo      repository.UserRepository
+	auth          service.AuthService
+	eventBus      events.EventBus
+	handshakeRepo secRepo.HandshakeRepository
 }
 
 // NewRegisterUseCase creates a new RegisterUseCase.
-func NewRegisterUseCase(userRepo repository.UserRepository, auth service.AuthService, eventBus events.EventBus) *RegisterUseCase {
-	return &RegisterUseCase{userRepo: userRepo, auth: auth, eventBus: eventBus}
+func NewRegisterUseCase(userRepo repository.UserRepository, auth service.AuthService, eventBus events.EventBus, handshakeRepo secRepo.HandshakeRepository) *RegisterUseCase {
+	return &RegisterUseCase{userRepo: userRepo, auth: auth, eventBus: eventBus, handshakeRepo: handshakeRepo}
 }
 
 // Execute registers a new user.
 func (uc *RegisterUseCase) Execute(ctx context.Context, req dto.RegisterRequest) (*dto.UserInfo, error) {
+	if _, err := secUC.EnsureHandshakeValid(ctx, uc.handshakeRepo, req.HandshakeID); err != nil {
+		return nil, err
+	}
+
 	// Check if user already exists
 	existing, _ := uc.userRepo.GetByEmail(ctx, req.Email)
 	if existing != nil {

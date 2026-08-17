@@ -32,11 +32,16 @@ func NewJWTService(cfg config.JWTConfig) *JWTService {
 // customClaims extends JWT standard claims with our domain data.
 type customClaims struct {
 	jwt.RegisteredClaims
-	UserID         string   `json:"user_id"`
-	Email          string   `json:"email"`
+	UserID         string   `json:"user_id,omitempty"`
+	Email          string   `json:"email,omitempty"`
 	OrganizationID string   `json:"organization_id,omitempty"`
 	Roles          []string `json:"roles,omitempty"`
 	Permissions    []string `json:"permissions,omitempty"`
+	TokenKind      string   `json:"token_kind,omitempty"`
+	DeviceID       string   `json:"device_id,omitempty"`
+	HandshakeID    string   `json:"handshake_id,omitempty"`
+	ChannelID      string   `json:"channel_id,omitempty"`
+	BarrierFP      string   `json:"barrier_fp,omitempty"`
 }
 
 func (s *JWTService) HashPassword(password string) (string, error) {
@@ -55,20 +60,53 @@ func (s *JWTService) VerifyPassword(hashedPassword, password string) error {
 }
 
 func (s *JWTService) GenerateToken(_ context.Context, claims service.TokenClaims) (string, error) {
-	now := time.Now()
+	now := time.Now().UTC()
+	kind := claims.TokenKind
+	if kind == "" {
+		kind = service.TokenKindUser
+	}
+
+	ttl := s.expiration
+	switch kind {
+	case service.TokenKindDevice:
+		ttl = 15 * time.Minute
+	case service.TokenKindBlended:
+		ttl = 8 * time.Hour
+	}
+
+	subject := claims.UserID.String()
+	if claims.UserID == uuid.Nil && claims.DeviceID != uuid.Nil {
+		subject = claims.DeviceID.String()
+	}
+
 	c := customClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    s.issuer,
-			Subject:   claims.UserID.String(),
-			ExpiresAt: jwt.NewNumericDate(now.Add(s.expiration)),
+			Subject:   subject,
+			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			ID:        uuid.New().String(),
 		},
-		UserID:         claims.UserID.String(),
-		Email:          claims.Email,
-		OrganizationID: claims.OrganizationID.String(),
-		Roles:          claims.Roles,
-		Permissions:    claims.Permissions,
+		Email:     claims.Email,
+		Roles:     claims.Roles,
+		Permissions: claims.Permissions,
+		TokenKind: kind,
+		BarrierFP: claims.BarrierFP,
+	}
+	if claims.UserID != uuid.Nil {
+		c.UserID = claims.UserID.String()
+	}
+	if claims.OrganizationID != uuid.Nil {
+		c.OrganizationID = claims.OrganizationID.String()
+	}
+	if claims.DeviceID != uuid.Nil {
+		c.DeviceID = claims.DeviceID.String()
+	}
+	if claims.HandshakeID != uuid.Nil {
+		c.HandshakeID = claims.HandshakeID.String()
+	}
+	if claims.ChannelID != uuid.Nil {
+		c.ChannelID = claims.ChannelID.String()
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
@@ -97,6 +135,13 @@ func (s *JWTService) ValidateToken(_ context.Context, tokenStr string) (*service
 
 	userID, _ := uuid.Parse(claims.UserID)
 	orgID, _ := uuid.Parse(claims.OrganizationID)
+	deviceID, _ := uuid.Parse(claims.DeviceID)
+	handshakeID, _ := uuid.Parse(claims.HandshakeID)
+	channelID, _ := uuid.Parse(claims.ChannelID)
+	kind := claims.TokenKind
+	if kind == "" {
+		kind = service.TokenKindUser
+	}
 
 	return &service.TokenClaims{
 		UserID:         userID,
@@ -104,5 +149,10 @@ func (s *JWTService) ValidateToken(_ context.Context, tokenStr string) (*service
 		OrganizationID: orgID,
 		Roles:          claims.Roles,
 		Permissions:    claims.Permissions,
+		TokenKind:      kind,
+		DeviceID:       deviceID,
+		HandshakeID:    handshakeID,
+		ChannelID:      channelID,
+		BarrierFP:      claims.BarrierFP,
 	}, nil
 }

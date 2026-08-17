@@ -20,8 +20,12 @@ enum AppFlavor {
   String get displayName => 'NavGo';
 }
 
+/// Active flavor set by [startApp].
+AppFlavor currentAppFlavor = AppFlavor.dev;
+
 Future<void> startApp(AppFlavor flavor) async {
   WidgetsFlutterBinding.ensureInitialized();
+  currentAppFlavor = flavor;
 
   await MasterApp.runBefore(
     assetConfigPath: flavor.assetConfigPath,

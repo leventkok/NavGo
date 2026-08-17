@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -18,6 +19,7 @@ import (
 	iamHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/iam"
 	llmHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/llm"
 	realtimeHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/realtime"
+	securityHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/security"
 	tenantHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/tenant"
 	tripHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/trip"
 
@@ -58,6 +60,8 @@ type Dependencies struct {
 	RealtimeHandler *realtimeHandler.Handler
 	TripHandler     *tripHandler.Handler
 	LLMHandler      *llmHandler.Handler
+	SecurityHandler *securityHandler.Handler
+	AuditMiddleware func(http.Handler) http.Handler
 
 	// Gateway
 	GatewayPipeline *gateway.Pipeline
@@ -65,6 +69,9 @@ type Dependencies struct {
 	// Repos needed for middleware
 	OrgRepo       tenantRepo.OrgRepository
 	WorkspaceRepo tenantRepo.WorkspaceRepository
+
+	AuthRateLimiter middleware.RateLimiter
+	LLMRateLimiter  middleware.RateLimiter
 }
 
 // New creates the root Chi router with all middleware and routes.
@@ -75,10 +82,14 @@ func New(deps Dependencies) *chi.Mux {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logging(deps.Logger))
 	r.Use(middleware.Recoverer(deps.Logger))
+	r.Use(middleware.SecurityHeaders)
 	if deps.MaxBodyBytes > 0 {
 		r.Use(middleware.MaxBodyBytes(deps.MaxBodyBytes))
 	}
 	r.Use(cors.Handler(middleware.CORSOptions(deps.CORSAllowedOrigins)))
+	if deps.AuditMiddleware != nil {
+		r.Use(deps.AuditMiddleware)
+	}
 
 	// Health endpoints
 	healthHandler := health.NewHandler(deps.DB, deps.Redis)
@@ -88,26 +99,64 @@ func New(deps Dependencies) *chi.Mux {
 	// Prometheus metrics
 	r.Handle("/metrics", promhttp.Handler())
 
+	authLimiter := deps.AuthRateLimiter
+	if authLimiter == nil {
+		authLimiter = middleware.PreferRedisOrMemory(deps.Redis, "auth", 30, time.Minute)
+	}
+	llmLimiter := deps.LLMRateLimiter
+	if llmLimiter == nil {
+		llmLimiter = middleware.PreferRedisOrMemory(deps.Redis, "llm", 60, time.Minute)
+	}
+
 	// API v1 routes
 	r.Route("/api/v1", func(r chi.Router) {
 		// Public auth routes (no JWT required)
 		r.Route("/auth", func(r chi.Router) {
-			if deps.IAMHandler != nil {
-				r.Post("/register", deps.IAMHandler.Register)
-				r.Post("/login", deps.IAMHandler.Login)
-			}
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RateLimit(authLimiter, "auth"))
+				if deps.SecurityHandler != nil {
+					r.Post("/handshake", deps.SecurityHandler.Handshake)
+					r.Post("/magic-link/request", deps.SecurityHandler.RequestMagicLink)
+					r.Post("/magic-link/verify", deps.SecurityHandler.VerifyMagicLink)
+				}
+				if deps.IAMHandler != nil {
+					r.Post("/register", deps.IAMHandler.Register)
+					r.Post("/login", deps.IAMHandler.Login)
+				}
+			})
 		})
+
+		// Channel preflight (device JWT)
+		if deps.SecurityHandler != nil && deps.AuthService != nil {
+			r.Route("/c/{channelId}", func(r chi.Router) {
+				r.With(middleware.JWTAuth(deps.AuthService), middleware.VerifyChannelAccess).
+					Get("/preflight", deps.SecurityHandler.ChannelPreflight)
+			})
+		}
 
 		// Protected routes (require JWT)
 		r.Group(func(r chi.Router) {
 			if deps.AuthService != nil {
 				r.Use(middleware.JWTAuth(deps.AuthService))
+				r.Use(middleware.RequireUserPrincipal)
 			}
 
 			// Tenant resolution middleware (with workspace support)
 			if deps.OrgRepo != nil {
-				// Note: WorkspaceRepo can be nil - workspace resolution is optional
 				r.Use(middleware.TenantResolverWithWorkspace(deps.OrgRepo, deps.WorkspaceRepo))
+			}
+
+			// Bind + channel me
+			if deps.SecurityHandler != nil {
+				r.With(middleware.RateLimit(authLimiter, "bind")).Post("/auth/bind", deps.SecurityHandler.Bind)
+				r.Route("/c/{channelId}", func(r chi.Router) {
+					r.With(middleware.RequireBlended, middleware.VerifyChannelAccess).
+						Get("/me", deps.SecurityHandler.ChannelMe)
+				})
+				r.Route("/security/scans", func(r chi.Router) {
+					r.Post("/", deps.SecurityHandler.IngestScan)
+					r.Get("/", deps.SecurityHandler.ListScans)
+				})
 			}
 
 			// WebSocket stays outside the gateway middleware group (chi forbids Use after routes).
@@ -192,32 +241,34 @@ func New(deps Dependencies) *chi.Mux {
 					r.With(maybeRequirePermission(deps.RBACService, "org:read")).Get("/users/{userId}/audit-logs", deps.AuditHandler.ListByUser)
 				}
 
-				// NavGo trip / places / routes (grounded itinerary)
+				// NavGo trip / places / routes (grounded itinerary) — blended JWT required for launch
 				if deps.TripHandler != nil {
-					r.Post("/places/search", deps.TripHandler.SearchPlaces)
-					r.Post("/routes/build", deps.TripHandler.BuildRoute)
-					r.Post("/trips/plan", deps.TripHandler.PlanDay)
-					r.Route("/itineraries", func(r chi.Router) {
-						r.Post("/", deps.TripHandler.SaveItinerary)
-						r.Get("/", deps.TripHandler.ListItineraries)
-						r.Get("/{id}", deps.TripHandler.GetItinerary)
+					r.Group(func(r chi.Router) {
+						r.Use(middleware.RequireBlendedWhenEnabled)
+						r.Post("/places/search", deps.TripHandler.SearchPlaces)
+						r.Post("/routes/build", deps.TripHandler.BuildRoute)
+						r.Post("/trips/plan", deps.TripHandler.PlanDay)
+						r.Route("/itineraries", func(r chi.Router) {
+							r.Post("/", deps.TripHandler.SaveItinerary)
+							r.Get("/", deps.TripHandler.ListItineraries)
+							r.Get("/{id}", deps.TripHandler.GetItinerary)
+						})
 					})
 				}
 
-				// LLM planning helpers (OpenAI-compatible upstream; optional)
+				// LLM planning helpers
 				if deps.LLMHandler != nil {
 					r.Route("/llm", func(r chi.Router) {
+						r.Use(middleware.RequireBlendedWhenEnabled)
+						r.Use(middleware.LLMKillSwitch(deps.Redis))
+						r.Use(middleware.RateLimit(llmLimiter, "llm"))
 						r.Post("/parse-intent", deps.LLMHandler.ParseIntent)
 						r.Post("/pick-stops", deps.LLMHandler.PickStops)
 					})
 				}
 
 				// Catch-all handler for managed endpoints (must be last in the group)
-				// This allows the gateway pipeline to handle dynamic endpoints like /api/v1/products
-				// The gateway middleware will validate and return responses for managed endpoints
 				r.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
-					// Gateway middleware should have already handled this if it's a managed endpoint
-					// If we reach here, it means no endpoint was found, return 404
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(http.StatusNotFound)
 					_, _ = w.Write([]byte(`{"error":"endpoint not found","code":404,"message":"No endpoint registered for this path. Define the endpoint first using POST /api/v1/organizations/{orgId}/apps/{appId}/endpoints"}`))
@@ -226,12 +277,7 @@ func New(deps Dependencies) *chi.Mux {
 		})
 	})
 
-	// Catch-all handler for managed endpoints (must be after all specific routes)
-	// This allows the gateway pipeline to handle dynamic endpoints like /api/v1/products
-	// The gateway middleware will validate and return responses for managed endpoints
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		// If this is an API v1 path, let the gateway handle it (if it hasn't already)
-		// Otherwise return 404
 		if !strings.HasPrefix(r.URL.Path, "/api/v1") {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNotFound)
@@ -239,8 +285,6 @@ func New(deps Dependencies) *chi.Mux {
 			return
 		}
 
-		// For /api/v1 paths, check if gateway pipeline already handled it
-		// If not, return 404 (gateway would have returned response if endpoint existed)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"error":"endpoint not found","code":404,"message":"No endpoint registered for this path. Define the endpoint first."}`))

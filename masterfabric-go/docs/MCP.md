@@ -13,13 +13,21 @@ NavGo exposes an MCP (Model Context Protocol) server over **stdio** so Cursor / 
 | `list_itineraries` | List by user |
 | `plan_day` | Orchestrates search + route (+ optional save) |
 
-## Run
+## Identity (AuthZ outside the prompt)
 
-Postgres must be up and migrations applied (`places_cache`, `itineraries`).
+MCP does **not** accept `user_id` from tool arguments. Configure:
+
+| Env | Purpose |
+| --- | --- |
+| `MCP_USER_ID` | Required UUID bound to all save/list/plan operations |
+| `MCP_SERVICE_TOKEN` | Optional shared secret |
+| `MCP_EXPECTED_TOKEN` | If set, must match `MCP_SERVICE_TOKEN` |
+| `MCP_REQUIRE_TOKEN` | `true` to refuse start without token |
 
 ```bash
-# from repo root
+# from repo root / masterfabric-go
 export DB_HOST=localhost DB_USER=navgo DB_PASSWORD=navgo DB_NAME=navgo
+export MCP_USER_ID=00000000-0000-0000-0000-000000000001
 go run ./cmd/mcp
 ```
 

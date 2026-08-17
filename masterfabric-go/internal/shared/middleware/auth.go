@@ -50,9 +50,15 @@ func JWTAuth(authService service.AuthService) func(http.Handler) http.Handler {
 			ctx = context.WithValue(ctx, ContextKeyEmail, claims.Email)
 			ctx = context.WithValue(ctx, ContextKeyOrganizationID, claims.OrganizationID)
 			ctx = context.WithValue(ctx, ContextKeyPermissions, claims.Permissions)
+			ctx = context.WithValue(ctx, ContextKeyTokenKind, claims.TokenKind)
+			ctx = context.WithValue(ctx, ContextKeyDeviceID, claims.DeviceID)
+			ctx = context.WithValue(ctx, ContextKeyChannelID, claims.ChannelID)
+			ctx = context.WithValue(ctx, ContextKeyHandshakeID, claims.HandshakeID)
 
 			// Also populate logger context
-			ctx = logger.ContextWithUserID(ctx, claims.UserID.String())
+			if claims.UserID != uuid.Nil {
+				ctx = logger.ContextWithUserID(ctx, claims.UserID.String())
+			}
 			if claims.OrganizationID != uuid.Nil {
 				ctx = logger.ContextWithOrganizationID(ctx, claims.OrganizationID.String())
 			}

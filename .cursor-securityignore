@@ -1,0 +1,9 @@
+# Generated noise / examples
+**/node_modules/**
+**/build/**
+**/.dart_tool/**
+masterfabric-go/deployments/cloudflare/**/*.ipynb
+docs/examples/**
+
+# Finding suppressions (add ids after baseline scan)
+# id:example-finding

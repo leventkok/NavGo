@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:navgo_mobile/core/constants/api_constants.dart';
 import 'package:navgo_mobile/core/models/place_model.dart';
+import 'package:navgo_mobile/data/auth_token_store.dart';
+import 'package:navgo_mobile/flavors/app_flavor.dart';
 
 class PlanIntent {
   const PlanIntent({
@@ -31,7 +34,6 @@ class PlannerService {
             Dio(
               BaseOptions(
                 baseUrl: baseUrl ?? defaultApiBaseUrl(),
-                // Modal cold start often exceeds 20s connect / 60s first token.
                 connectTimeout: const Duration(seconds: 60),
                 receiveTimeout: const Duration(seconds: 180),
                 sendTimeout: const Duration(seconds: 60),
@@ -41,15 +43,51 @@ class PlannerService {
 
   final Dio _dio;
 
-  Future<String> ensureDemoAuth() async {
-    const email = 'demo@navgo.local';
-    const password = 'NavGoDemo1!';
-    try {
-      final res = await _dio.post(
+  /// Handshake → login/register → bind. Prod forbids hardcoded demo unless
+  /// `--dart-define=NAVGO_ALLOW_DEMO=true` (dev flavor default allows demo).
+  Future<String> ensureSession() async {
+    final cached = await AuthTokenStore.readToken();
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+
+    const defineEmail = String.fromEnvironment('NAVGO_USER_EMAIL');
+    const definePassword = String.fromEnvironment('NAVGO_USER_PASSWORD');
+    const allowDemoDefine = bool.fromEnvironment('NAVGO_ALLOW_DEMO', defaultValue: false);
+
+    final allowDemo = allowDemoDefine || currentAppFlavor == AppFlavor.dev || kDebugMode;
+    var email = defineEmail;
+    var password = definePassword;
+    if (email.isEmpty || password.isEmpty) {
+      if (!allowDemo) {
+        throw StateError(
+          'Production auth required: pass --dart-define=NAVGO_USER_EMAIL=... '
+          'and NAVGO_USER_PASSWORD=..., or complete a prior bind session.',
+        );
+      }
+      email = 'demo@navgo.local';
+      password = 'NavGoDemo1!';
+    }
+
+    final hs = await _dio.post('/api/v1/auth/handshake', data: {});
+    final handshakeId = hs.data['handshake_id'] as String;
+    final barrier = hs.data['barrier'] as String;
+    final channelPath = hs.data['channel_path'] as String?;
+
+    Future<Response<dynamic>> login() {
+      return _dio.post(
         '/api/v1/auth/login',
-        data: {'email': email, 'password': password},
+        data: {
+          'email': email,
+          'password': password,
+          'handshake_id': handshakeId,
+        },
       );
-      return res.data['token'] as String;
+    }
+
+    Response<dynamic> loginRes;
+    try {
+      loginRes = await login();
     } catch (_) {
       await _dio.post(
         '/api/v1/auth/register',
@@ -57,15 +95,30 @@ class PlannerService {
           'email': email,
           'password': password,
           'first_name': 'NavGo',
-          'last_name': 'Demo',
+          'last_name': allowDemo ? 'Demo' : 'User',
+          'handshake_id': handshakeId,
         },
       );
-      final res = await _dio.post(
-        '/api/v1/auth/login',
-        data: {'email': email, 'password': password},
-      );
-      return res.data['token'] as String;
+      loginRes = await login();
     }
+
+    final userToken = loginRes.data['token'] as String;
+    final bind = await _dio.post(
+      '/api/v1/auth/bind',
+      data: {
+        'handshake_id': handshakeId,
+        'barrier': barrier,
+      },
+      options: Options(headers: {'Authorization': 'Bearer $userToken'}),
+    );
+    final blended = bind.data['token'] as String;
+    await AuthTokenStore.save(
+      blendedToken: blended,
+      channelPath: channelPath ?? (bind.data['channel_path'] as String? ?? ''),
+      barrier: barrier,
+      handshakeId: handshakeId,
+    );
+    return blended;
   }
 
   /// Returns null when LLM is unavailable (503) or request fails.
@@ -97,7 +150,6 @@ class PlannerService {
       );
       return PlanIntent.fromJson(res.data as Map<String, dynamic>);
     } on DioException {
-      // LLM optional — template / PreferenceQueryBuilder path continues.
       return null;
     }
   }

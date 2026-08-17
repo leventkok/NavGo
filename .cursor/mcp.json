@@ -9,8 +9,16 @@
         "DB_USER": "navgo",
         "DB_PASSWORD": "navgo",
         "DB_NAME": "navgo",
-        "DB_SSLMODE": "disable"
+        "DB_SSLMODE": "disable",
+        "MCP_USER_ID": "00000000-0000-0000-0000-000000000001",
+        "MCP_REQUIRE_TOKEN": "false"
       }
+    },
+    "cursor-security": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/tools/cursor-security/packages/cursor-security-mcp/dist/index.js"
+      ]
     }
   }
 }

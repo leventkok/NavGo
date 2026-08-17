@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   buildRoute,
-  ensureDemoAuth,
+  ensureSession,
   type Place,
   type RouteResponse,
   saveItinerary,
@@ -77,7 +77,7 @@ export default function Planner() {
     setError(null);
     setStep("auth");
     try {
-      const t = await ensureDemoAuth();
+      const t = await ensureSession();
       setToken(t);
       if (clearCacheFirst) await clearGemmaCache();
       setStep("loading_model");

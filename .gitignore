@@ -78,3 +78,6 @@ masterfabric-go/deployments/peft-adapters/train_intent.jsonl
 masterfabric-go/deployments/peft-adapters/train_pick_stops.jsonl
 masterfabric-go/deployments/peft-adapters/navgo_train_v3.jsonl
 masterfabric-go/deployments/peft-adapters/sample_train_pick_stops.jsonl
+
+# Local clone of gurkanfikretgunak/cursor-security for MCP scanner
+tools/cursor-security/

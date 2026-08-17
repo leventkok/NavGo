@@ -8,16 +8,18 @@ import (
 
 // RegisterRequest is the input for user registration.
 type RegisterRequest struct {
-	Email     string `json:"email" validate:"required,email"`
-	Password  string `json:"password" validate:"required,min=8"`
-	FirstName string `json:"first_name" validate:"required"`
-	LastName  string `json:"last_name" validate:"required"`
+	Email       string `json:"email" validate:"required,email"`
+	Password    string `json:"password" validate:"required,min=8"`
+	FirstName   string `json:"first_name" validate:"required"`
+	LastName    string `json:"last_name" validate:"required"`
+	HandshakeID string `json:"handshake_id,omitempty"`
 }
 
 // LoginRequest is the input for user login.
 type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	Email       string `json:"email" validate:"required,email"`
+	Password    string `json:"password" validate:"required"`
+	HandshakeID string `json:"handshake_id,omitempty"`
 }
 
 // LoginResponse is the output for successful login.

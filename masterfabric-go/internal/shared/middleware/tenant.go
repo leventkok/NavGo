@@ -31,21 +31,28 @@ func TenantResolverWithWorkspace(orgRepo tenantRepo.OrgRepository, workspaceRepo
 			ctx := r.Context()
 			var orgID uuid.UUID
 
-			// 1. Check explicit header
+			var claimOrgID uuid.UUID
+			if v, ok := ctx.Value(ContextKeyOrganizationID).(uuid.UUID); ok {
+				claimOrgID = v
+			}
+
+			// 1. Check explicit header — must not contradict JWT org claim (tenant bind).
 			if header := r.Header.Get("X-Organization-ID"); header != "" {
 				parsed, err := uuid.Parse(header)
 				if err != nil {
 					response.JSON(w, http.StatusBadRequest, map[string]string{"error": "invalid X-Organization-ID"})
 					return
 				}
+				if claimOrgID != uuid.Nil && parsed != claimOrgID {
+					response.JSON(w, http.StatusForbidden, map[string]string{"error": "organization header does not match token"})
+					return
+				}
 				orgID = parsed
 			}
 
 			// 2. Fall back to JWT claims (if auth middleware already ran)
-			if orgID == uuid.Nil {
-				if claimOrgID, ok := ctx.Value(ContextKeyOrganizationID).(uuid.UUID); ok && claimOrgID != uuid.Nil {
-					orgID = claimOrgID
-				}
+			if orgID == uuid.Nil && claimOrgID != uuid.Nil {
+				orgID = claimOrgID
 			}
 
 			// 3. Fall back to subdomain

@@ -33,6 +33,30 @@ export type Intent = {
   max_stops: number;
 };
 
+type Session = {
+  token: string;
+  barrier: string;
+  handshakeId: string;
+  channelPath: string;
+};
+
+const SESSION_KEY = "navgo_session_v1";
+
+function loadSession(): Session | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as Session) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(s: Session) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
+}
+
 async function request<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
@@ -63,15 +87,36 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string):
   return data as T;
 }
 
-export async function ensureDemoAuth(): Promise<string> {
-  const email = "demo@navgo.local";
-  const password = "NavGoDemo1!";
+/** Handshake → login/register → bind. Demo only when NEXT_PUBLIC_ALLOW_DEMO_AUTH=true. */
+export async function ensureSession(): Promise<string> {
+  const cached = loadSession();
+  if (cached?.token) return cached.token;
+
+  const allowDemo = process.env.NEXT_PUBLIC_ALLOW_DEMO_AUTH === "true";
+  const email = process.env.NEXT_PUBLIC_NAVGO_USER_EMAIL || (allowDemo ? "demo@navgo.local" : "");
+  const password = process.env.NEXT_PUBLIC_NAVGO_USER_PASSWORD || (allowDemo ? "NavGoDemo1!" : "");
+  if (!email || !password) {
+    throw new Error("Set NEXT_PUBLIC_NAVGO_USER_EMAIL/PASSWORD or NEXT_PUBLIC_ALLOW_DEMO_AUTH=true");
+  }
+
+  const hs = await request<{
+    handshake_id: string;
+    barrier: string;
+    channel_path: string;
+  }>("/api/v1/auth/handshake", { method: "POST", body: "{}" });
+
+  const loginBody = JSON.stringify({
+    email,
+    password,
+    handshake_id: hs.handshake_id,
+  });
+
+  let login: { token: string };
   try {
-    const login = await request<{ token: string }>("/api/v1/auth/login", {
+    login = await request<{ token: string }>("/api/v1/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: loginBody,
     });
-    return login.token;
   } catch {
     await request("/api/v1/auth/register", {
       method: "POST",
@@ -79,15 +124,40 @@ export async function ensureDemoAuth(): Promise<string> {
         email,
         password,
         first_name: "NavGo",
-        last_name: "Demo",
+        last_name: allowDemo ? "Demo" : "User",
+        handshake_id: hs.handshake_id,
       }),
     });
-    const login = await request<{ token: string }>("/api/v1/auth/login", {
+    login = await request<{ token: string }>("/api/v1/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: loginBody,
     });
-    return login.token;
   }
+
+  const bind = await request<{ token: string; channel_path: string }>(
+    "/api/v1/auth/bind",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        handshake_id: hs.handshake_id,
+        barrier: hs.barrier,
+      }),
+    },
+    login.token,
+  );
+
+  saveSession({
+    token: bind.token,
+    barrier: hs.barrier,
+    handshakeId: hs.handshake_id,
+    channelPath: bind.channel_path || hs.channel_path,
+  });
+  return bind.token;
+}
+
+/** @deprecated use ensureSession */
+export async function ensureDemoAuth(): Promise<string> {
+  return ensureSession();
 }
 
 export function searchPlaces(token: string, intent: Intent) {

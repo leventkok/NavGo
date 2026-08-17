@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,6 +34,11 @@ func run() error {
 	cfg := config.Load()
 	log := logger.New(cfg.Log.Level, cfg.Log.Format)
 	slog.SetDefault(log)
+
+	boundUser, err := resolveMCPIdentity()
+	if err != nil {
+		return err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -89,8 +95,7 @@ func run() error {
 	})
 
 	s.AddTool(mcp.NewTool("save_itinerary",
-		mcp.WithDescription("Persist a grounded itinerary decision."),
-		mcp.WithString("user_id", mcp.Required(), mcp.Description("UUID of authenticated user")),
+		mcp.WithDescription("Persist a grounded itinerary decision for the bound MCP principal."),
 		mcp.WithString("prompt", mcp.Required(), mcp.Description("Original user prompt")),
 		mcp.WithString("area", mcp.Description("Area label")),
 		mcp.WithString("locale", mcp.Description("Locale")),
@@ -100,16 +105,12 @@ func run() error {
 		mcp.WithString("overview_polyline", mcp.Description("Encoded/overview polyline")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		userID, err := uuid.Parse(strArg(args, "user_id"))
-		if err != nil {
-			return mcp.NewToolResultError("invalid user_id"), nil
-		}
 		rawStops, _ := json.Marshal(args["stops"])
 		var stops []dto.StopInput
 		if err := json.Unmarshal(rawStops, &stops); err != nil {
 			return mcp.NewToolResultError("invalid stops"), nil
 		}
-		it, err := svc.SaveItinerary(ctx, userID, dto.SaveItineraryRequest{
+		it, err := svc.SaveItinerary(ctx, boundUser, dto.SaveItineraryRequest{
 			Prompt:           strArg(args, "prompt"),
 			Area:             strArg(args, "area"),
 			Locale:           strArg(args, "locale"),
@@ -122,7 +123,7 @@ func run() error {
 	})
 
 	s.AddTool(mcp.NewTool("get_itinerary",
-		mcp.WithDescription("Fetch itinerary by id"),
+		mcp.WithDescription("Fetch itinerary by id (owner must match MCP_USER_ID)"),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Itinerary UUID")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		id, err := uuid.Parse(strArg(req.GetArguments(), "id"))
@@ -130,21 +131,22 @@ func run() error {
 			return mcp.NewToolResultError("invalid id"), nil
 		}
 		it, err := svc.GetItinerary(ctx, id)
-		return jsonResult(it, err)
+		if err != nil {
+			return jsonResult(it, err)
+		}
+		if it.UserID != boundUser {
+			return mcp.NewToolResultError("itinerary access denied"), nil
+		}
+		return jsonResult(it, nil)
 	})
 
 	s.AddTool(mcp.NewTool("list_itineraries",
-		mcp.WithDescription("List itineraries for a user"),
-		mcp.WithString("user_id", mcp.Required(), mcp.Description("User UUID")),
+		mcp.WithDescription("List itineraries for the bound MCP principal"),
 		mcp.WithNumber("limit", mcp.Description("Page size")),
 		mcp.WithNumber("offset", mcp.Description("Offset")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		userID, err := uuid.Parse(strArg(args, "user_id"))
-		if err != nil {
-			return mcp.NewToolResultError("invalid user_id"), nil
-		}
-		list, err := svc.ListItineraries(ctx, userID, intArg(args, "limit", 20), intArg(args, "offset", 0))
+		list, err := svc.ListItineraries(ctx, boundUser, intArg(args, "limit", 20), intArg(args, "offset", 0))
 		return jsonResult(list, err)
 	})
 
@@ -156,19 +158,10 @@ func run() error {
 		mcp.WithString("travel_mode", mcp.Description("WALK|DRIVE")),
 		mcp.WithBoolean("optimize_waypoint_order", mcp.Description("Optimize order")),
 		mcp.WithBoolean("save", mcp.Description("Persist itinerary when true")),
-		mcp.WithString("user_id", mcp.Description("Required when save=true")),
 		mcp.WithNumber("max_stops", mcp.Description("Max grounded stops")),
 		mcp.WithString("model", mcp.Description("Client model id")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		var userID uuid.UUID
-		if v := strArg(args, "user_id"); v != "" {
-			parsed, err := uuid.Parse(v)
-			if err != nil {
-				return mcp.NewToolResultError("invalid user_id"), nil
-			}
-			userID = parsed
-		}
 		resp, err := svc.PlanDay(ctx, dto.PlanDayRequest{
 			Prompt:                strArg(args, "prompt"),
 			Area:                  strArg(args, "area"),
@@ -176,15 +169,42 @@ func run() error {
 			TravelMode:            strArg(args, "travel_mode"),
 			OptimizeWaypointOrder: boolArg(args, "optimize_waypoint_order", true),
 			Save:                  boolArg(args, "save", false),
-			UserID:                userID,
+			UserID:                boundUser,
 			MaxStops:              intArg(args, "max_stops", 5),
 			Model:                 strArg(args, "model"),
 		})
 		return jsonResult(resp, err)
 	})
 
-	log.Info("navgo MCP server starting on stdio")
+	log.Info("navgo MCP server starting on stdio", "bound_user", boundUser.String())
 	return server.ServeStdio(s)
+}
+
+// resolveMCPIdentity enforces AuthZ outside the prompt: identity comes from env, not tool args.
+func resolveMCPIdentity() (uuid.UUID, error) {
+	token := strings.TrimSpace(os.Getenv("MCP_SERVICE_TOKEN"))
+	require := strings.EqualFold(os.Getenv("MCP_REQUIRE_TOKEN"), "true") || os.Getenv("MCP_REQUIRE_TOKEN") == "1"
+	expected := strings.TrimSpace(os.Getenv("MCP_EXPECTED_TOKEN"))
+	if require {
+		if token == "" {
+			return uuid.Nil, fmt.Errorf("MCP_SERVICE_TOKEN required when MCP_REQUIRE_TOKEN=true")
+		}
+		if expected != "" && token != expected {
+			return uuid.Nil, fmt.Errorf("MCP_SERVICE_TOKEN mismatch")
+		}
+	} else if expected != "" && token != "" && token != expected {
+		return uuid.Nil, fmt.Errorf("MCP_SERVICE_TOKEN mismatch")
+	}
+
+	raw := strings.TrimSpace(os.Getenv("MCP_USER_ID"))
+	if raw == "" {
+		return uuid.Nil, fmt.Errorf("MCP_USER_ID is required (do not pass user_id via tool args)")
+	}
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("invalid MCP_USER_ID: %w", err)
+	}
+	return id, nil
 }
 
 func jsonResult(v any, err error) (*mcp.CallToolResult, error) {

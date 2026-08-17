@@ -6,6 +6,28 @@
 | ------- | ------------------ |
 | 0.0.1   | :white_check_mark: |
 
+### Agentic / handshake controls (cursor-security adaptation)
+
+| ID | Category | Control | Implementation | Status |
+| -- | -------- | ------- | -------------- | ------ |
+| SC-20 | AuthN | Device handshake + barrier | `POST /api/v1/auth/handshake`, migration `00016` | ✅ Implemented |
+| SC-21 | Session | Blended JWT (user+device+channel) | `POST /api/v1/auth/bind`, JWT `token_kind` | ✅ Implemented |
+| SC-22 | Access | Path-bound channel verify | `/api/v1/c/{channelId}/*`, `VerifyChannelAccess` | ✅ Implemented |
+| SC-23 | Tenant | Org header must match JWT claim | `middleware/tenant.go` | ✅ Implemented |
+| SC-24 | Observability | Wire HTTP audit middleware | `AuditLog` in router | ✅ Implemented |
+| SC-25 | DoS | Auth/LLM memory rate limits | `middleware/rate_limit.go` | ✅ Implemented |
+| SC-26 | Headers | Security headers | `middleware/security_headers.go` + Next headers | ✅ Implemented |
+| SC-27 | Agency | MCP identity from env | `MCP_USER_ID`, optional `MCP_SERVICE_TOKEN` | ✅ Implemented |
+| SC-28 | Containment | LLM kill switch | `LLM_KILL_SWITCH` | ✅ Implemented |
+| SC-29 | Access | Itinerary owner check | `GetItinerary` handler | ✅ Implemented |
+| SC-30 | Supply chain | CI govulncheck/gosec/gitleaks | `.github/workflows/security.yml` | ✅ Implemented |
+| SC-31 | Evidence | Security scan ingest | `POST /api/v1/security/scans` | ✅ Implemented |
+| SC-32 | AuthN | Magic link bound to handshake | `/api/v1/auth/magic-link/*`, migration `00017` | ✅ Implemented |
+| SC-33 | Session | Blended required for trip/LLM | `REQUIRE_BLENDED_SENSITIVE` (default true) | ✅ Implemented |
+| SC-34 | AuthN | Handshake required on login/register | `REQUIRE_AUTH_HANDSHAKE` (default true) | ✅ Implemented |
+
+See also: `docs/security/AGENTIC_MANIFEST.md`, `docs/security/threat-model.md`, `compliance/`.
+
 ## Reporting a Vulnerability
 
 **Please do not report security vulnerabilities through public GitHub issues.**
@@ -13,7 +35,7 @@
 Instead, please report them via one of the following methods:
 
 - **Email**: security@masterfabric.co
-- **GitHub Security Advisory**: Use the [Security tab](https://github.com/leventkok/NavGo-go/security/advisories/new) to create a private security advisory
+- **GitHub Security Advisory**: Use the [Security tab](https://github.com/leventkok/NavGo/security/advisories/new) to create a private security advisory
 
 ### What to Include
 

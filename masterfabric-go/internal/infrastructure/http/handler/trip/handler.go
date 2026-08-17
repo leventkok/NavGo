@@ -70,6 +70,11 @@ func (h *Handler) SaveItinerary(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetItinerary(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok || userID == uuid.Nil {
+		response.JSON(w, http.StatusUnauthorized, map[string]string{"error": "not authenticated"})
+		return
+	}
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		response.JSON(w, http.StatusBadRequest, map[string]string{"error": "invalid id"})
@@ -78,6 +83,10 @@ func (h *Handler) GetItinerary(w http.ResponseWriter, r *http.Request) {
 	it, err := h.svc.GetItinerary(r.Context(), id)
 	if err != nil {
 		response.Error(w, err)
+		return
+	}
+	if it.UserID != userID {
+		response.JSON(w, http.StatusForbidden, map[string]string{"error": "itinerary access denied"})
 		return
 	}
 	response.JSON(w, http.StatusOK, it)

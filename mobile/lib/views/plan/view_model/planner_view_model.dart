@@ -84,7 +84,7 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
     );
 
     try {
-      final token = await _service.ensureDemoAuth();
+      final token = await _service.ensureSession();
 
       var area = event.area.trim();
       var query = event.query.trim();

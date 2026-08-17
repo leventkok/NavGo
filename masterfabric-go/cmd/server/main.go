@@ -30,15 +30,18 @@ import (
 	pgAudit "github.com/leventkok/NavGo/internal/infrastructure/postgres/audit"
 	pgIam "github.com/leventkok/NavGo/internal/infrastructure/postgres/iam"
 	placespg "github.com/leventkok/NavGo/internal/infrastructure/postgres/places"
+	pgSecurity "github.com/leventkok/NavGo/internal/infrastructure/postgres/security"
 	pgTenant "github.com/leventkok/NavGo/internal/infrastructure/postgres/tenant"
 	trippg "github.com/leventkok/NavGo/internal/infrastructure/postgres/trip"
 	infraWS "github.com/leventkok/NavGo/internal/infrastructure/websocket"
+	securityHandler "github.com/leventkok/NavGo/internal/infrastructure/http/handler/security"
 
 	// Application use cases
 	apimgmtUC "github.com/leventkok/NavGo/internal/application/apimanagement/usecase"
 	iamUC "github.com/leventkok/NavGo/internal/application/iam/usecase"
 	llmUC "github.com/leventkok/NavGo/internal/application/llm/usecase"
 	realtimeUC "github.com/leventkok/NavGo/internal/application/realtime/usecase"
+	securityUC "github.com/leventkok/NavGo/internal/application/security/usecase"
 	tenantUC "github.com/leventkok/NavGo/internal/application/tenant/usecase"
 	tripUC "github.com/leventkok/NavGo/internal/application/trip/usecase"
 
@@ -52,6 +55,8 @@ import (
 	"github.com/leventkok/NavGo/internal/shared/database"
 	"github.com/leventkok/NavGo/internal/shared/events"
 	"github.com/leventkok/NavGo/internal/shared/logger"
+	"github.com/leventkok/NavGo/internal/shared/middleware"
+	sharedsec "github.com/leventkok/NavGo/internal/shared/security"
 	"github.com/leventkok/NavGo/internal/shared/telemetry"
 	"github.com/leventkok/NavGo/internal/shared/version"
 )
@@ -215,10 +220,11 @@ func buildDependencies(
 	}
 
 	// LLM needs only the upstream URL — wire even when Postgres is down.
+	var llmService *llmUC.Service
 	if cfg.LLM.Enabled() {
 		llmClient := llminfra.NewOpenAIClient(cfg.LLM.BaseURL, cfg.LLM.Model, cfg.LLM.APIKey)
-		llmService := llmUC.NewService(llmClient, cfg.LLM.Model)
-		deps.LLMHandler = llmHandler.NewHandler(llmService)
+		llmService = llmUC.NewService(llmClient, cfg.LLM.Model)
+		deps.LLMHandler = llmHandler.NewHandler(llmService, nil)
 		log.Info("LLM enabled", "base_url", cfg.LLM.BaseURL, "model", cfg.LLM.Model)
 	} else {
 		log.Info("LLM_BASE_URL unset; /api/v1/llm/* disabled")
@@ -239,6 +245,8 @@ func buildDependencies(
 	endpointRepo := pgApimgmt.NewEndpointRepo(db)
 	policyRepo := pgApimgmt.NewPolicyRepo(db)
 	auditRepo := pgAudit.NewAuditRepo(db)
+	handshakeRepo := pgSecurity.NewHandshakeRepo(db)
+	scanRepo := pgSecurity.NewScanRepo(db)
 
 	// --- Services ---
 	jwtService := infraAuth.NewJWTService(cfg.JWT)
@@ -248,10 +256,17 @@ func buildDependencies(
 	deps.RBACService = rbacService
 	deps.OrgRepo = orgRepo
 	deps.WorkspaceRepo = workspaceRepo
+	deps.AuditMiddleware = middleware.AuditLog(auditRepo)
+	deps.AuthRateLimiter = middleware.PreferRedisOrMemory(redisClient, "auth", 30, time.Minute)
+	deps.LLMRateLimiter = middleware.PreferRedisOrMemory(redisClient, "llm", 60, time.Minute)
+	auditWriter := sharedsec.NewAuditWriter(auditRepo)
+	if llmService != nil {
+		deps.LLMHandler = llmHandler.NewHandler(llmService, auditWriter)
+	}
 
 	// --- Use cases (with event bus for domain event publishing) ---
-	registerUC := iamUC.NewRegisterUseCase(userRepo, jwtService, eventBus)
-	loginUC := iamUC.NewLoginUseCase(userRepo, jwtService)
+	registerUC := iamUC.NewRegisterUseCase(userRepo, jwtService, eventBus, handshakeRepo)
+	loginUC := iamUC.NewLoginUseCase(userRepo, jwtService, handshakeRepo)
 	assignRoleUC := iamUC.NewAssignRoleUseCase(roleRepo, rbacService, eventBus)
 	createOrgUC := tenantUC.NewCreateOrgUseCase(orgRepo, eventBus)
 	createWorkspaceUC := tenantUC.NewCreateWorkspaceUseCase(workspaceRepo, orgRepo, eventBus)
@@ -283,6 +298,14 @@ func buildDependencies(
 
 	// --- Handlers ---
 	deps.IAMHandler = iamHandler.NewHandler(registerUC, loginUC, assignRoleUC, userRepo)
+	handshakeUC := securityUC.NewHandshakeUseCase(handshakeRepo, jwtService)
+	bindUC := securityUC.NewBindUseCase(handshakeRepo, jwtService)
+	ingestScanUC := securityUC.NewIngestScanUseCase(scanRepo)
+	listScansUC := securityUC.NewListScansUseCase(scanRepo)
+	magicRepo := pgSecurity.NewMagicLinkRepo(db)
+	magicReqUC := securityUC.NewRequestMagicLinkUseCase(magicRepo, handshakeRepo)
+	magicVerifyUC := securityUC.NewVerifyMagicLinkUseCase(magicRepo, userRepo, jwtService)
+	deps.SecurityHandler = securityHandler.NewHandler(handshakeUC, bindUC, ingestScanUC, listScansUC, magicReqUC, magicVerifyUC, auditWriter)
 	deps.TenantHandler = tenantHandler.NewHandler(
 		createOrgUC,
 		createAppUC,

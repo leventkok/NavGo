@@ -16,15 +16,18 @@ func AuditLog(auditRepo repository.AuditRepository) func(http.Handler) http.Hand
 			wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 			next.ServeHTTP(wrapped, r)
 
-			// Record audit log asynchronously (best-effort)
+			// Record audit log asynchronously (best-effort). Skip when org unknown
+			// because audit_logs.organization_id is NOT NULL.
 			go func() {
 				ctx := r.Context()
 
-				orgID, _ := TenantIDFromContext(ctx)
+				orgID, ok := TenantIDFromContext(ctx)
+				if !ok || orgID == uuid.Nil {
+					return
+				}
 				userID, _ := UserIDFromContext(ctx)
 
-				// Get request ID from response header (set by RequestID middleware)
-				requestID := w.Header().Get(RequestIDHeader)
+				requestID := wrapped.Header().Get(RequestIDHeader)
 
 				var userIDPtr *uuid.UUID
 				if userID != uuid.Nil {
@@ -42,7 +45,6 @@ func AuditLog(auditRepo repository.AuditRepository) func(http.Handler) http.Hand
 					UserAgent:      r.UserAgent(),
 				}
 
-				// Best-effort: ignore errors
 				_ = auditRepo.Create(ctx, entry)
 			}()
 		})
