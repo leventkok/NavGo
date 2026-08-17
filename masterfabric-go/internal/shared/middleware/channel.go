@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ContextKeyTokenKind   contextKey = "auth_token_kind"
+	ContextKeyTokenKind   contextKey = "auth_kind"
 	ContextKeyDeviceID    contextKey = "auth_device_id"
 	ContextKeyChannelID   contextKey = "auth_channel_id"
 	ContextKeyHandshakeID contextKey = "auth_handshake_id"

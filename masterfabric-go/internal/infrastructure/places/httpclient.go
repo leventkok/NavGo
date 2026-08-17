@@ -99,7 +99,7 @@ func doGoogleRequest(ctx context.Context, client *http.Client, req *http.Request
 			return nil, nil, err
 		}
 		raw, readErr := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if readErr != nil {
 			lastErr = readErr
 			if isTransientGoogleTransportErr(readErr) {
