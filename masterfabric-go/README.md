@@ -1,7 +1,7 @@
 # NavGo API (`masterfabric-go`)
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
-![Go Version](https://img.shields.io/badge/go-1.26.4-00ADD8?logo=go)
+![Go Version](https://img.shields.io/badge/go-1.26.6-00ADD8?logo=go)
 
 Go backend for grounded travel day-plans: Places search, day routes, and itinerary persistence. Optional **LLM proxy** (`/api/v1/llm/*`) talks to OpenAI-compatible upstream (local Ollama, or Colab + Cloudflare Tunnel in prod). Web still has a web-llm demo; Flutter calls the API (with preference-template fallback if LLM is off).
 
@@ -19,7 +19,7 @@ Same licensing posture as [mlc-llm-monitoring](https://github.com/leventkok/mlc-
 
 ### Prerequisites
 
-- Go 1.26.4+
+- Go 1.26.6+
 - Docker & Docker Compose
 - (Optional) `goose` CLI
 - (Optional) [Ollama](https://ollama.com) + `ollama pull gemma2:2b`
@@ -85,7 +85,7 @@ See [docs/RENDER.md](docs/RENDER.md).
 
 | Component | Technology |
 |-----------|------------|
-| Language | Go 1.26.4 |
+| Language | Go 1.26.6 |
 | HTTP | Chi |
 | DB | PostgreSQL 16 + pgvector |
 | Cache | Redis 7 |

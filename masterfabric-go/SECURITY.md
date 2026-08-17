@@ -62,9 +62,9 @@ Baseline security controls implemented on the `security/hardening` branch (July 
 
 | ID | Category | Control | Implementation | CWE | Status |
 | -- | -------- | ------- | -------------- | --- | ------ |
-| SC-01 | Toolchain | Pin Go stdlib to a patched release | `go 1.26.4` in `go.mod` | CWE-94 | ✅ Implemented |
+| SC-01 | Toolchain | Pin Go stdlib to a patched release | `go 1.26.6` in `go.mod` | CWE-94 | ✅ Implemented |
 | SC-02 | Dependencies | Refresh vulnerable direct modules | pgx v5.10.0, chi v5.3.0, validator v10.30.3, `golang.org/x/crypto` v0.53.0 | CWE-400 | ✅ Implemented |
-| SC-03 | Container | Non-root runtime with current base images | `golang:1.26.4-alpine` builder, `alpine:3.24` runtime, `appuser` | CWE-250 | ✅ Implemented |
+| SC-03 | Container | Non-root runtime with current base images | `golang:1.26.6-alpine` builder, `alpine:3.24` runtime, `appuser` | CWE-250 | ✅ Implemented |
 | SC-04 | Infrastructure | Bind dev service ports to loopback | `DB_HOST_BIND`, `REDIS_HOST_BIND`, `KAFKA_HOST_BIND` default to `127.0.0.1` in `deployments/docker-compose.yml` | CWE-1392 | ✅ Implemented |
 | SC-05 | Error handling | Sanitize internal server error responses | `internal/shared/response/json.go` — generic 5xx message, detail via `slog` | CWE-209 | ✅ Implemented |
 | SC-06 | Configuration | Escape database DSN credentials | `DatabaseConfig.DSN()` uses `net/url.UserPassword` | CWE-116 | ✅ Implemented |
@@ -90,7 +90,7 @@ Baseline security controls implemented on the `security/hardening` branch (July 
 | Total controls | **19** |
 | Implemented | **18** |
 | Documented accepted risk | **1** (SC-18) |
-| Go toolchain | **1.26.4** |
+| Go toolchain | **1.26.6** |
 | Verification | `go test ./...`, `govulncheck`, `gosec` |
 
 ### Environment variables
