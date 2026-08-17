@@ -146,6 +146,7 @@ class _Translations$plan$ru extends Translations$plan$tr {
 	@override String get errorGeneric => 'Не удалось создать план. Попробуйте ещё раз.';
 	@override late final _Translations$plan$startSheet$ru startSheet = _Translations$plan$startSheet$ru._(_root);
 	@override late final _Translations$plan$suggestion$ru suggestion = _Translations$plan$suggestion$ru._(_root);
+	@override String get suggestionsLoading => 'Подбираем идеи для вашего района…';
 }
 
 // Path: location
@@ -379,6 +380,7 @@ class _Translations$plan$suggestion$ru extends Translations$plan$suggestion$tr {
 	@override late final _Translations$plan$suggestion$waterfront$ru waterfront = _Translations$plan$suggestion$waterfront$ru._(_root);
 	@override late final _Translations$plan$suggestion$coffeeRoute$ru coffeeRoute = _Translations$plan$suggestion$coffeeRoute$ru._(_root);
 	@override late final _Translations$plan$suggestion$museumCulture$ru museumCulture = _Translations$plan$suggestion$museumCulture$ru._(_root);
+	@override late final _Translations$plan$suggestion$parksLakes$ru parksLakes = _Translations$plan$suggestion$parksLakes$ru._(_root);
 }
 
 // Path: location.settingsRequired
@@ -465,6 +467,17 @@ class _Translations$plan$suggestion$museumCulture$ru extends Translations$plan$s
 	// Translations
 	@override String get title => 'Музеи и культура';
 	@override String get subtitle => 'Музей · галерея · памятник';
+}
+
+// Path: plan.suggestion.parksLakes
+class _Translations$plan$suggestion$parksLakes$ru extends Translations$plan$suggestion$parksLakes$tr {
+	_Translations$plan$suggestion$parksLakes$ru._(TranslationsRu root) : this._root = root, super.internal(root);
+
+	final TranslationsRu _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Парки и озёра';
+	@override String get subtitle => 'Зелень · прогулка · отдых';
 }
 
 // Path: explore.destinations.istanbul
@@ -648,6 +661,9 @@ extension on TranslationsRu {
 			'plan.suggestion.coffeeRoute.subtitle' => 'Три остановки · спокойный темп',
 			'plan.suggestion.museumCulture.title' => 'Музеи и культура',
 			'plan.suggestion.museumCulture.subtitle' => 'Музей · галерея · памятник',
+			'plan.suggestion.parksLakes.title' => 'Парки и озёра',
+			'plan.suggestion.parksLakes.subtitle' => 'Зелень · прогулка · отдых',
+			'plan.suggestionsLoading' => 'Подбираем идеи для вашего района…',
 			'location.requiredTitle' => 'Нужно местоположение',
 			'location.failedTitle' => 'Не удалось определить местоположение',
 			'location.manualTitle' => 'Город или район',

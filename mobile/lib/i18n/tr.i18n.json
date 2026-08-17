@@ -143,8 +143,13 @@
       "museumCulture": {
         "title": "Müze & kültür",
         "subtitle": "Müze · galeri · anıt"
+      },
+      "parksLakes": {
+        "title": "Park & göl",
+        "subtitle": "Yeşil alan · yürüyüş · dinlenme"
       }
-    }
+    },
+    "suggestionsLoading": "Konuma göre öneriler hazırlanıyor…"
   },
   "location": {
     "requiredTitle": "Konum gerekli",

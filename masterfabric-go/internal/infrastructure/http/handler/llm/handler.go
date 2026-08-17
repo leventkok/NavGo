@@ -71,3 +71,19 @@ func (h *Handler) PickStops(w http.ResponseWriter, r *http.Request) {
 	h.auditLLM(r, "llm.pick_stops")
 	response.JSON(w, http.StatusOK, resp)
 }
+
+// SuggestDayCards handles POST /api/v1/llm/suggest-day-cards.
+func (h *Handler) SuggestDayCards(w http.ResponseWriter, r *http.Request) {
+	var req dto.SuggestDayCardsRequest
+	if err := validator.DecodeAndValidate(r, &req); err != nil {
+		response.JSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	resp, err := h.svc.SuggestDayCards(r.Context(), req)
+	if err != nil {
+		response.Error(w, err)
+		return
+	}
+	h.auditLLM(r, "llm.suggest_day_cards")
+	response.JSON(w, http.StatusOK, resp)
+}

@@ -260,6 +260,7 @@ func New(deps Dependencies) *chi.Mux {
 						r.Use(middleware.RateLimit(llmLimiter, "llm"))
 						r.Post("/parse-intent", deps.LLMHandler.ParseIntent)
 						r.Post("/pick-stops", deps.LLMHandler.PickStops)
+						r.Post("/suggest-day-cards", deps.LLMHandler.SuggestDayCards)
 					})
 				}
 

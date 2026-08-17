@@ -35,6 +35,31 @@ func TestParseIntent_JSON(t *testing.T) {
 	}
 }
 
+func TestSuggestDayCards_JSON(t *testing.T) {
+	svc := usecase.NewService(stubChat{
+		content: `{"cards":[
+			{"title":"Müze rotası","subtitle":"Anıtkabir · müzeler","query":"müze anıt","icon":"museum"},
+			{"title":"Kahve","subtitle":"Kızılay kafeler","query":"kahve cafe","icon":"coffee"},
+			{"title":"Park","subtitle":"Yeşil alan","query":"park göl","icon":"parks"},
+			{"title":"Tarihi merkez","subtitle":"Ulus","query":"tarihi yer","icon":"historic"}
+		]}`,
+	}, "navgo-gemma")
+
+	got, err := svc.SuggestDayCards(context.Background(), dto.SuggestDayCardsRequest{
+		Area:   "Ankara",
+		Locale: "tr",
+	})
+	if err != nil {
+		t.Fatalf("SuggestDayCards: %v", err)
+	}
+	if len(got.Cards) != 4 {
+		t.Fatalf("want 4 cards, got %d", len(got.Cards))
+	}
+	if got.Cards[0].Icon != "museum" || got.Cards[0].Title == "" {
+		t.Fatalf("unexpected first card: %+v", got.Cards[0])
+	}
+}
+
 func TestPickStops_FiltersInvalid(t *testing.T) {
 	svc := usecase.NewService(stubChat{
 		content: `{"indices":[0, 99, 1, 0]}`,

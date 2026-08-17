@@ -143,8 +143,13 @@
       "museumCulture": {
         "title": "Museum & culture",
         "subtitle": "Museum · gallery · monument"
+      },
+      "parksLakes": {
+        "title": "Parks & lakes",
+        "subtitle": "Green space · walk · unwind"
       }
-    }
+    },
+    "suggestionsLoading": "Preparing suggestions for your area…"
   },
   "location": {
     "requiredTitle": "Location required",

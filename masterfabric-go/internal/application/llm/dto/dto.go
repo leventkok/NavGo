@@ -37,3 +37,27 @@ type PickStopsResponse struct {
 	Indices []int  `json:"indices"`
 	Model   string `json:"model,omitempty"`
 }
+
+// SuggestDayCardsRequest asks the LLM for location-aware day-plan theme cards.
+type SuggestDayCardsRequest struct {
+	Area          string   `json:"area" validate:"required"`
+	Locale        string   `json:"locale"`
+	Tempo         string   `json:"tempo"`
+	Interests     []string `json:"interests"`
+	GroupType     string   `json:"group_type"`
+	TransportMode string   `json:"transport_mode"`
+}
+
+// DayCardSuggestion is one quick-start theme for the plan home screen.
+type DayCardSuggestion struct {
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
+	Query    string `json:"query"`
+	Icon     string `json:"icon"`
+}
+
+// SuggestDayCardsResponse is a short list of location-realistic theme cards.
+type SuggestDayCardsResponse struct {
+	Cards []DayCardSuggestion `json:"cards"`
+	Model string              `json:"model,omitempty"`
+}

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:navgo_mobile/core/extensions/core_extensions.dart';
@@ -9,6 +11,7 @@ import 'package:navgo_mobile/data/session_repository.dart';
 import 'package:navgo_mobile/i18n/strings.g.dart';
 import 'package:navgo_mobile/views/plan/models/plan_suggestion.dart';
 import 'package:navgo_mobile/views/plan/models/preference_query_builder.dart';
+import 'package:navgo_mobile/views/plan/repository/service/planner_service.dart';
 import 'package:navgo_mobile/views/plan/view_model/planner_view_model.dart';
 import 'package:navgo_mobile/views/plan/widgets/planner_widgets.dart';
 
@@ -38,7 +41,61 @@ class _PlanViewContent extends StatefulWidget {
 class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets {
   final _queryBuilder = const PreferenceQueryBuilder();
   final _location = LocationService();
+  final _plannerService = PlannerService();
   var _resolvingLocation = false;
+  var _loadingSuggestions = false;
+  List<PlanSuggestion> _suggestions = const [];
+  String _suggestionsForArea = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _suggestions = fallbackSuggestionsFor(t);
+    final area = widget.session.defaultArea.trim();
+    if (area.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_loadSuggestions(area));
+      });
+    }
+  }
+
+  Future<void> _loadSuggestions(String area) async {
+    final trimmed = area.trim();
+    if (trimmed.isEmpty) return;
+    if (_loadingSuggestions && _suggestionsForArea == trimmed) return;
+
+    setState(() {
+      _loadingSuggestions = true;
+      _suggestionsForArea = trimmed;
+    });
+
+    try {
+      final token = await _plannerService.ensureSession();
+      final locale = LocaleSettings.currentLocale.languageCode;
+      final cards = await _plannerService.suggestDayCards(
+        token: token,
+        area: trimmed,
+        locale: locale,
+        tempo: widget.session.tempo,
+        interests: widget.session.interests,
+        groupType: widget.session.groupType,
+        transportMode: widget.session.transportMode,
+      );
+      if (!mounted) return;
+      setState(() {
+        _suggestions = (cards != null && cards.length >= 2)
+            ? cards
+            : fallbackSuggestionsFor(t);
+        _loadingSuggestions = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _suggestions = fallbackSuggestionsFor(t);
+        _loadingSuggestions = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +134,9 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
         ? t.common.defaultTravelerName
         : widget.session.displayName;
     final areaLabel = _area.isEmpty ? null : _area;
-    final suggestions = planSuggestionsFor(t);
+    final suggestions = _suggestions.isEmpty
+        ? fallbackSuggestionsFor(t)
+        : _suggestions;
 
     return ListView(
       padding: context.paddingNormal,
@@ -133,25 +192,30 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
         Text(
           areaLabel == null
               ? t.plan.quickStartNeedLocation
-              : t.plan.quickStartWithArea(area: areaLabel),
+              : (_loadingSuggestions
+                  ? t.plan.suggestionsLoading
+                  : t.plan.quickStartWithArea(area: areaLabel)),
           style: context.textTheme.bodyMedium,
         ),
         const SizedBox(height: 14),
         SizedBox(
           height: 148,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: suggestions.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 12),
-            itemBuilder: (context, i) {
-              final s = suggestions[i];
-              return suggestionCard(
-                context,
-                suggestion: s,
-                onTap: () => _startSuggestion(context, s),
-              );
-            },
-          ),
+          child: _loadingSuggestions && areaLabel != null
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: suggestions.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
+                  itemBuilder: (context, i) {
+                    final s = suggestions[i];
+                    return suggestionCard(
+                      context,
+                      suggestion: s,
+                      onTap: () => _startSuggestion(context, s),
+                    );
+                  },
+                ),
         ),
         const SizedBox(height: 24),
         tipBanner(context),
@@ -167,6 +231,7 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
       if (outcome.result != null && outcome.result!.area.isNotEmpty) {
         await widget.session.setDefaultArea(outcome.result!.area);
         if (mounted) setState(() {});
+        await _loadSuggestions(outcome.result!.area);
         return outcome.result!.area;
       }
       if (!mounted) return null;
@@ -179,6 +244,7 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
       if (manual == null || manual.trim().isEmpty) return null;
       await widget.session.setDefaultArea(manual.trim());
       if (mounted) setState(() {});
+      await _loadSuggestions(manual.trim());
       return manual.trim();
     } finally {
       if (mounted) setState(() => _resolvingLocation = false);
@@ -232,10 +298,20 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
       builder: (sheetContext) => _PlanStartSheet(
         initialArea: _area,
         location: _location,
+        suggestions: _suggestions.isEmpty
+            ? fallbackSuggestionsFor(t)
+            : _suggestions,
+        onAreaResolved: (area) async {
+          await widget.session.setDefaultArea(area);
+          await _loadSuggestions(area);
+        },
       ),
     );
     if (pick == null || !mounted) return;
     await widget.session.setDefaultArea(pick.area);
+    if (pick.area.trim() != _suggestionsForArea) {
+      await _loadSuggestions(pick.area);
+    }
     if (!mounted) return;
     final query = _buildQuery(pick.suggestion);
     final prompt =
@@ -271,6 +347,7 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(title, style: context.textTheme.headlineMedium),
+          const SizedBox(height: 8),
           Text(
             t.plan.routeSummary(
               km: km,
@@ -305,10 +382,14 @@ class _PlanStartSheet extends StatefulWidget {
   const _PlanStartSheet({
     required this.initialArea,
     required this.location,
+    required this.suggestions,
+    required this.onAreaResolved,
   });
 
   final String initialArea;
   final LocationService location;
+  final List<PlanSuggestion> suggestions;
+  final Future<void> Function(String area) onAreaResolved;
 
   @override
   State<_PlanStartSheet> createState() => _PlanStartSheetState();
@@ -336,6 +417,7 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
       final outcome = await widget.location.resolveAreaDetailed();
       if (outcome.result != null && outcome.result!.area.isNotEmpty) {
         _areaCtrl.text = outcome.result!.area;
+        await widget.onAreaResolved(outcome.result!.area);
         return;
       }
       if (!mounted) return;
@@ -347,6 +429,7 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
       );
       if (area != null && area.isNotEmpty) {
         _areaCtrl.text = area;
+        await widget.onAreaResolved(area);
       }
     } finally {
       if (mounted) setState(() => _resolving = false);
@@ -371,7 +454,9 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
   @override
   Widget build(BuildContext context) {
     final t = context.t;
-    final suggestions = planSuggestionsFor(t);
+    final suggestions = widget.suggestions.isEmpty
+        ? fallbackSuggestionsFor(t)
+        : widget.suggestions;
     return Padding(
       padding: EdgeInsets.only(
         left: 20,

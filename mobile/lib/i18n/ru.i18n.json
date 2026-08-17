@@ -143,8 +143,13 @@
       "museumCulture": {
         "title": "Музеи и культура",
         "subtitle": "Музей · галерея · памятник"
+      },
+      "parksLakes": {
+        "title": "Парки и озёра",
+        "subtitle": "Зелень · прогулка · отдых"
       }
-    }
+    },
+    "suggestionsLoading": "Подбираем идеи для вашего района…"
   },
   "location": {
     "requiredTitle": "Нужно местоположение",

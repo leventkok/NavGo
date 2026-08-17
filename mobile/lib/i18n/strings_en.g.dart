@@ -146,6 +146,7 @@ class _Translations$plan$en extends Translations$plan$tr {
 	@override String get errorGeneric => 'Couldn’t create the plan. Please try again.';
 	@override late final _Translations$plan$startSheet$en startSheet = _Translations$plan$startSheet$en._(_root);
 	@override late final _Translations$plan$suggestion$en suggestion = _Translations$plan$suggestion$en._(_root);
+	@override String get suggestionsLoading => 'Preparing suggestions for your area…';
 }
 
 // Path: location
@@ -379,6 +380,7 @@ class _Translations$plan$suggestion$en extends Translations$plan$suggestion$tr {
 	@override late final _Translations$plan$suggestion$waterfront$en waterfront = _Translations$plan$suggestion$waterfront$en._(_root);
 	@override late final _Translations$plan$suggestion$coffeeRoute$en coffeeRoute = _Translations$plan$suggestion$coffeeRoute$en._(_root);
 	@override late final _Translations$plan$suggestion$museumCulture$en museumCulture = _Translations$plan$suggestion$museumCulture$en._(_root);
+	@override late final _Translations$plan$suggestion$parksLakes$en parksLakes = _Translations$plan$suggestion$parksLakes$en._(_root);
 }
 
 // Path: location.settingsRequired
@@ -465,6 +467,17 @@ class _Translations$plan$suggestion$museumCulture$en extends Translations$plan$s
 	// Translations
 	@override String get title => 'Museum & culture';
 	@override String get subtitle => 'Museum · gallery · monument';
+}
+
+// Path: plan.suggestion.parksLakes
+class _Translations$plan$suggestion$parksLakes$en extends Translations$plan$suggestion$parksLakes$tr {
+	_Translations$plan$suggestion$parksLakes$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Parks & lakes';
+	@override String get subtitle => 'Green space · walk · unwind';
 }
 
 // Path: explore.destinations.istanbul
@@ -648,6 +661,9 @@ extension on TranslationsEn {
 			'plan.suggestion.coffeeRoute.subtitle' => 'Three stops · calm pace',
 			'plan.suggestion.museumCulture.title' => 'Museum & culture',
 			'plan.suggestion.museumCulture.subtitle' => 'Museum · gallery · monument',
+			'plan.suggestion.parksLakes.title' => 'Parks & lakes',
+			'plan.suggestion.parksLakes.subtitle' => 'Green space · walk · unwind',
+			'plan.suggestionsLoading' => 'Preparing suggestions for your area…',
 			'location.requiredTitle' => 'Location required',
 			'location.failedTitle' => 'Couldn’t get location',
 			'location.manualTitle' => 'City or district',

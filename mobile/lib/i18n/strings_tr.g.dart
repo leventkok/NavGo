@@ -250,6 +250,9 @@ class Translations$plan$tr {
 
 	late final Translations$plan$startSheet$tr startSheet = Translations$plan$startSheet$tr.internal(_root);
 	late final Translations$plan$suggestion$tr suggestion = Translations$plan$suggestion$tr.internal(_root);
+
+	/// tr: 'Konuma göre öneriler hazırlanıyor…'
+	String get suggestionsLoading => 'Konuma göre öneriler hazırlanıyor…';
 }
 
 // Path: location
@@ -632,6 +635,7 @@ class Translations$plan$suggestion$tr {
 	late final Translations$plan$suggestion$waterfront$tr waterfront = Translations$plan$suggestion$waterfront$tr.internal(_root);
 	late final Translations$plan$suggestion$coffeeRoute$tr coffeeRoute = Translations$plan$suggestion$coffeeRoute$tr.internal(_root);
 	late final Translations$plan$suggestion$museumCulture$tr museumCulture = Translations$plan$suggestion$museumCulture$tr.internal(_root);
+	late final Translations$plan$suggestion$parksLakes$tr parksLakes = Translations$plan$suggestion$parksLakes$tr.internal(_root);
 }
 
 // Path: location.settingsRequired
@@ -752,6 +756,21 @@ class Translations$plan$suggestion$museumCulture$tr {
 
 	/// tr: 'Müze · galeri · anıt'
 	String get subtitle => 'Müze · galeri · anıt';
+}
+
+// Path: plan.suggestion.parksLakes
+class Translations$plan$suggestion$parksLakes$tr {
+	Translations$plan$suggestion$parksLakes$tr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// tr: 'Park & göl'
+	String get title => 'Park & göl';
+
+	/// tr: 'Yeşil alan · yürüyüş · dinlenme'
+	String get subtitle => 'Yeşil alan · yürüyüş · dinlenme';
 }
 
 // Path: explore.destinations.istanbul
@@ -959,6 +978,9 @@ extension on Translations {
 			'plan.suggestion.coffeeRoute.subtitle' => 'Üç durak · sakin tempo',
 			'plan.suggestion.museumCulture.title' => 'Müze & kültür',
 			'plan.suggestion.museumCulture.subtitle' => 'Müze · galeri · anıt',
+			'plan.suggestion.parksLakes.title' => 'Park & göl',
+			'plan.suggestion.parksLakes.subtitle' => 'Yeşil alan · yürüyüş · dinlenme',
+			'plan.suggestionsLoading' => 'Konuma göre öneriler hazırlanıyor…',
 			'location.requiredTitle' => 'Konum gerekli',
 			'location.failedTitle' => 'Konum alınamadı',
 			'location.manualTitle' => 'Şehir veya ilçe',

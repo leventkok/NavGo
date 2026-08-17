@@ -204,6 +204,127 @@ func (s *Service) PickStops(ctx context.Context, req dto.PickStopsRequest) (*dto
 	return &dto.PickStopsResponse{Indices: indices, Model: s.model}, nil
 }
 
+var allowedDayCardIcons = map[string]struct{}{
+	"historic":   {},
+	"waterfront": {},
+	"coffee":     {},
+	"museum":     {},
+	"parks":      {},
+	"bazaar":     {},
+	"viewpoints": {},
+	"modern":     {},
+}
+
+// SuggestDayCards returns location-realistic day-plan theme cards via LLM.
+func (s *Service) SuggestDayCards(ctx context.Context, req dto.SuggestDayCardsRequest) (*dto.SuggestDayCardsResponse, error) {
+	if s.chat == nil {
+		return nil, domainErr.New(domainErr.ErrUnavailable, "LLM is not configured", nil)
+	}
+	area := strings.TrimSpace(req.Area)
+	if area == "" {
+		return nil, domainErr.New(domainErr.ErrValidation, "area is required", nil)
+	}
+
+	locale := strings.TrimSpace(req.Locale)
+	if locale == "" {
+		locale = "tr"
+	}
+
+	var prefs strings.Builder
+	fmt.Fprintf(&prefs, "area=%s\nlocale=%s\n", area, locale)
+	if t := strings.TrimSpace(req.Tempo); t != "" {
+		fmt.Fprintf(&prefs, "tempo=%s\n", t)
+	}
+	if len(req.Interests) > 0 {
+		fmt.Fprintf(&prefs, "interests=%s\n", strings.Join(req.Interests, ","))
+	}
+	if g := strings.TrimSpace(req.GroupType); g != "" {
+		fmt.Fprintf(&prefs, "group_type=%s\n", g)
+	}
+	if m := strings.TrimSpace(req.TransportMode); m != "" {
+		fmt.Fprintf(&prefs, "transport_mode=%s\n", m)
+	}
+
+	content, err := s.chat.Chat(ctx, llm.ChatRequest{
+		Temperature: 0.4,
+		MaxTokens:   512,
+		Messages: []llm.Message{
+			{
+				Role: "system",
+				Content: "You are the NavGo travel assistant. Return ONLY valid JSON, no other text. " +
+					"Schema: {\"cards\":[{\"title\":\"string\",\"subtitle\":\"string\",\"query\":\"string\",\"icon\":\"string\"}]}. " +
+					"Exactly 4 cards. title and subtitle must be in the locale language (tr/en/ru). " +
+					"query is a short Places search phrase for that theme in the locale language. " +
+					"icon must be one of: historic, waterfront, coffee, museum, parks, bazaar, viewpoints, modern. " +
+					"Cards MUST be realistic for the given location. " +
+					"NEVER suggest waterfront/harbor/coast/beach/marina themes for inland cities (e.g. Ankara, Konya, Nevşehir). " +
+					"Only use icon=waterfront when the place actually has a meaningful coastline, harbor, lake shore promenade, or waterfront district. " +
+					"Prefer variety: history, culture, food/coffee, parks/nature, viewpoints, modern streets when fitting.",
+			},
+			{
+				Role: "user",
+				Content: fmt.Sprintf(
+					"Konum: %s\nPreferences:\n%s\nBu konumda bir günlük gezi için 4 öneri kartı öner. "+
+						"Sahil/liman bu konumda yoksa waterfront kullanma ve liman/sahil kartı yazma.",
+					area,
+					prefs.String(),
+				),
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	raw, err := extractJSONObject(content)
+	if err != nil {
+		return nil, domainErr.New(domainErr.ErrInternal, "LLM did not return JSON", err)
+	}
+
+	var parsed struct {
+		Cards []struct {
+			Title    string `json:"title"`
+			Subtitle string `json:"subtitle"`
+			Query    string `json:"query"`
+			Icon     string `json:"icon"`
+		} `json:"cards"`
+	}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return nil, domainErr.New(domainErr.ErrInternal, "failed to parse day cards JSON", err)
+	}
+
+	cards := make([]dto.DayCardSuggestion, 0, 4)
+	for _, c := range parsed.Cards {
+		title := strings.TrimSpace(c.Title)
+		subtitle := strings.TrimSpace(c.Subtitle)
+		query := strings.TrimSpace(c.Query)
+		icon := strings.ToLower(strings.TrimSpace(c.Icon))
+		if title == "" || query == "" {
+			continue
+		}
+		if _, ok := allowedDayCardIcons[icon]; !ok {
+			icon = "modern"
+		}
+		if subtitle == "" {
+			subtitle = query
+		}
+		cards = append(cards, dto.DayCardSuggestion{
+			Title:    title,
+			Subtitle: subtitle,
+			Query:    query,
+			Icon:     icon,
+		})
+		if len(cards) >= 4 {
+			break
+		}
+	}
+	if len(cards) < 2 {
+		return nil, domainErr.New(domainErr.ErrInternal, "LLM returned too few day cards", nil)
+	}
+
+	return &dto.SuggestDayCardsResponse{Cards: cards, Model: s.model}, nil
+}
+
 func fallbackIndices(n, maxStops int) []int {
 	if maxStops > n {
 		maxStops = n

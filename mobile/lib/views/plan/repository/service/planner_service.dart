@@ -4,6 +4,7 @@ import 'package:navgo_mobile/core/constants/api_constants.dart';
 import 'package:navgo_mobile/core/models/place_model.dart';
 import 'package:navgo_mobile/data/auth_token_store.dart';
 import 'package:navgo_mobile/flavors/app_flavor.dart';
+import 'package:navgo_mobile/views/plan/models/plan_suggestion.dart';
 
 class PlanIntent {
   const PlanIntent({
@@ -186,6 +187,48 @@ class PlannerService {
           .where((i) => i >= 0 && i < places.length)
           .toList();
       return raw;
+    } on DioException {
+      return null;
+    }
+  }
+
+  /// Location-aware quick-start cards. Null when LLM is unavailable.
+  Future<List<PlanSuggestion>?> suggestDayCards({
+    required String token,
+    required String area,
+    String locale = 'tr',
+    String tempo = '',
+    List<String> interests = const [],
+    String groupType = '',
+    String transportMode = '',
+  }) async {
+    try {
+      final res = await _dio.post(
+        '/api/v1/llm/suggest-day-cards',
+        data: {
+          'area': area,
+          'locale': locale,
+          'tempo': tempo,
+          'interests': interests,
+          'group_type': groupType,
+          'transport_mode': transportMode,
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+          receiveTimeout: const Duration(seconds: 120),
+          sendTimeout: const Duration(seconds: 60),
+        ),
+      );
+      final raw = (res.data['cards'] as List<dynamic>? ?? []);
+      final cards = <PlanSuggestion>[];
+      for (final item in raw) {
+        if (item is! Map) continue;
+        final card = PlanSuggestion.fromApi(Map<String, dynamic>.from(item));
+        if (card.title.isEmpty || card.query.isEmpty) continue;
+        cards.add(card);
+      }
+      if (cards.length < 2) return null;
+      return cards.take(4).toList();
     } on DioException {
       return null;
     }

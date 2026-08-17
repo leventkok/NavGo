@@ -197,12 +197,18 @@ class LocationService {
   }
 
   Future<String?> _reverseGeocode(double lat, double lon) async {
+    // Platform geocoder (esp. emulator / missing Play Services) can hang
+    // indefinitely — always bound it so Nominatim can run.
     try {
-      final placemarks = await placemarkFromCoordinates(lat, lon);
+      final placemarks = await placemarkFromCoordinates(lat, lon).timeout(
+        const Duration(seconds: 5),
+      );
       if (placemarks.isNotEmpty) {
         final area = formatPlacemark(placemarks.first);
         if (area.isNotEmpty) return area;
       }
+    } on TimeoutException {
+      debugPrint('LocationService: platform geocoder timed out');
     } catch (e) {
       debugPrint('LocationService: platform geocoder failed: $e');
     }
@@ -222,6 +228,7 @@ class LocationService {
           headers: {
             'User-Agent': 'NavGoMobile/1.0 (dev; contact@navgo.local)',
           },
+          connectTimeout: const Duration(seconds: 8),
           receiveTimeout: const Duration(seconds: 8),
           sendTimeout: const Duration(seconds: 8),
         ),
