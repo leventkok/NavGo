@@ -141,6 +141,11 @@
       "error": "Rota önerilemedi. Tekrar dene.",
       "errorAuth": "Model isteği kabul etmedi (LLM anahtarı). Colab çıktısındaki anahtarı .env ile eşle.",
       "retry": "Tekrar dene",
+      "holdToSpeak": "Konuşmak için dokun",
+      "listening": "Kayıt alınıyor… tekrar dokununca gönderilir",
+      "voiceUnavailable": "Mikrofon veya konuşma tanıma kullanılamıyor.",
+      "voiceEmpty": "Ses algılanmadı. Tekrar dokun.",
+      "replayVoice": "Tekrar dinle",
       "thinking": {
         "s1": "Düşünüyor…",
         "s2": "Ruh halini seçiyor…",

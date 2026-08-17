@@ -392,6 +392,11 @@ class _Translations$plan$chat$ru extends Translations$plan$chat$tr {
 	@override String get error => 'Не удалось предложить маршрут. Попробуйте ещё раз.';
 	@override String get errorAuth => 'Модель отклонила запрос (ключ LLM). Сверьте ключ Colab с .env.';
 	@override String get retry => 'Повторить';
+	@override String get holdToSpeak => 'Нажмите, чтобы говорить';
+	@override String get listening => 'Запись… нажмите ещё раз, чтобы отправить';
+	@override String get voiceUnavailable => 'Микрофон или распознавание речи недоступны.';
+	@override String get voiceEmpty => 'Речь не распознана. Нажмите ещё раз.';
+	@override String get replayVoice => 'Слушать снова';
 	@override late final _Translations$plan$chat$thinking$ru thinking = _Translations$plan$chat$thinking$ru._(_root);
 }
 
@@ -777,6 +782,11 @@ extension on TranslationsRu {
 			'plan.chat.error' => 'Не удалось предложить маршрут. Попробуйте ещё раз.',
 			'plan.chat.errorAuth' => 'Модель отклонила запрос (ключ LLM). Сверьте ключ Colab с .env.',
 			'plan.chat.retry' => 'Повторить',
+			'plan.chat.holdToSpeak' => 'Нажмите, чтобы говорить',
+			'plan.chat.listening' => 'Запись… нажмите ещё раз, чтобы отправить',
+			'plan.chat.voiceUnavailable' => 'Микрофон или распознавание речи недоступны.',
+			'plan.chat.voiceEmpty' => 'Речь не распознана. Нажмите ещё раз.',
+			'plan.chat.replayVoice' => 'Слушать снова',
 			'plan.chat.thinking.s1' => 'Думаю…',
 			'plan.chat.thinking.s2' => 'Выбираю настроение…',
 			'plan.chat.thinking.s3' => 'Собираю маршрут…',

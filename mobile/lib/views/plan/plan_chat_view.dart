@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,7 @@ import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
 import 'package:navgo_mobile/i18n/strings.g.dart';
 import 'package:navgo_mobile/views/plan/models/plan_suggestion.dart';
+import 'package:navgo_mobile/views/plan/plan_voice.dart';
 import 'package:navgo_mobile/views/plan/repository/service/planner_service.dart';
 import 'package:navgo_mobile/views/plan/widgets/route_preview_sheet.dart';
 
@@ -31,12 +33,24 @@ class _PlanChatViewState extends State<PlanChatView> {
   final _input = TextEditingController();
   final _inputFocus = FocusNode();
   final _scroll = ScrollController();
+  final _voice = PlanVoice();
   final _items = <_ChatItem>[];
   PlanSuggestion? _quoted;
   var _sending = false;
+  var _listening = false;
+  var _voiceDraft = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _input.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
+    unawaited(_voice.dispose());
     _input.dispose();
     _inputFocus.dispose();
     _scroll.dispose();
@@ -49,6 +63,63 @@ class _PlanChatViewState extends State<PlanChatView> {
       if (!mounted) return;
       _inputFocus.requestFocus();
     });
+  }
+
+  Future<void> _toggleVoice() async {
+    if (_sending) return;
+    if (_listening) {
+      await _stopVoiceAndSend();
+      return;
+    }
+    await _startVoice();
+  }
+
+  Future<void> _startVoice() async {
+    final ok = await _voice.ensureReady();
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t.plan.chat.voiceUnavailable)),
+      );
+      return;
+    }
+    final started = await _voice.startListening(
+      localeCode: LocaleSettings.currentLocale.languageCode,
+      onDraft: (draft) {
+        if (!mounted) return;
+        setState(() => _voiceDraft = draft);
+      },
+    );
+    if (!mounted) return;
+    if (!started) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t.plan.chat.voiceUnavailable)),
+      );
+      return;
+    }
+    setState(() => _listening = true);
+  }
+
+  Future<void> _stopVoiceAndSend() async {
+    if (!_listening) return;
+    final clip = await _voice.stopListening();
+    if (!mounted) return;
+    setState(() {
+      _listening = false;
+      _voiceDraft = '';
+    });
+    if (clip.transcript.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.t.plan.chat.voiceEmpty)));
+      return;
+    }
+    await _send(
+      promptOverride: clip.transcript,
+      audioPath: clip.path,
+      audioDuration: clip.duration,
+      speakReply: true,
+    );
   }
 
   void _jumpToEnd() {
@@ -66,6 +137,9 @@ class _PlanChatViewState extends State<PlanChatView> {
     String? promptOverride,
     PlanSuggestion? quotedOverride,
     bool addUserBubble = true,
+    bool speakReply = false,
+    String? audioPath,
+    Duration audioDuration = Duration.zero,
   }) async {
     final text = (promptOverride ?? _input.text).trim();
     if (text.isEmpty || _sending) return;
@@ -76,7 +150,14 @@ class _PlanChatViewState extends State<PlanChatView> {
       _sending = true;
       _quoted = null;
       if (addUserBubble) {
-        _items.add(_ChatItem.user(text));
+        _items.add(
+          _ChatItem.user(
+            text,
+            audioPath: audioPath,
+            duration: audioDuration,
+            isVoiceNote: speakReply,
+          ),
+        );
       }
       _items.removeWhere((m) => m.isError);
       _items.add(const _ChatItem.loading());
@@ -99,10 +180,15 @@ class _PlanChatViewState extends State<PlanChatView> {
       if (!mounted) return;
       setState(() {
         _items.removeWhere((m) => m.isLoading);
-        _items.add(_ChatItem.card(card, card.area));
+        _items.add(_ChatItem.card(card, card.area, voiceReply: speakReply));
         _sending = false;
       });
       _jumpToEnd();
+      if (speakReply) {
+        unawaited(
+          _voice.speakCard(card, LocaleSettings.currentLocale.languageCode),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -237,7 +323,21 @@ class _PlanChatViewState extends State<PlanChatView> {
                     itemBuilder: (context, i) {
                       final item = _items[i];
                       if (item.isUser) {
-                        return _UserBubble(text: item.text);
+                        return _UserBubble(
+                          text: item.text,
+                          isVoiceNote: item.isVoiceNote,
+                          audioPath: item.audioPath,
+                          duration: item.duration,
+                          onSpeakTranscript:
+                              item.isVoiceNote && item.audioPath == null
+                              ? () => unawaited(
+                                  _voice.speakText(
+                                    item.text,
+                                    LocaleSettings.currentLocale.languageCode,
+                                  ),
+                                )
+                              : null,
+                        );
                       }
                       if (item.isLoading) {
                         return const _ThinkingBubble();
@@ -256,8 +356,15 @@ class _PlanChatViewState extends State<PlanChatView> {
                         key: ValueKey('llm-card-$i'),
                         suggestion: item.card!,
                         area: item.area,
+                        canReplayVoice: item.voiceReply,
                         onTap: () => _preview(item),
                         onReply: () => _quote(item.card!),
+                        onReplayVoice: () => unawaited(
+                          _voice.speakCard(
+                            item.card!,
+                            LocaleSettings.currentLocale.languageCode,
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -267,8 +374,12 @@ class _PlanChatViewState extends State<PlanChatView> {
             focusNode: _inputFocus,
             quoted: _quoted,
             sending: _sending,
+            listening: _listening,
+            voiceDraft: _voiceDraft,
+            hasText: _input.text.trim().isNotEmpty,
             onClearQuote: () => setState(() => _quoted = null),
             onSend: _send,
+            onMicTap: _toggleVoice,
           ),
         ],
       ),
@@ -277,17 +388,25 @@ class _PlanChatViewState extends State<PlanChatView> {
 }
 
 class _ChatItem {
-  const _ChatItem.user(this.text)
-    : card = null,
-      area = '',
-      isUser = true,
-      isLoading = false,
-      isError = false,
-      retryPrompt = '',
-      retryQuoted = null;
+  const _ChatItem.user(
+    this.text, {
+    this.audioPath,
+    this.duration = Duration.zero,
+    this.isVoiceNote = false,
+  }) : card = null,
+       area = '',
+       isUser = true,
+       isLoading = false,
+       isError = false,
+       voiceReply = false,
+       retryPrompt = '',
+       retryQuoted = null;
 
-  const _ChatItem.card(this.card, this.area)
+  const _ChatItem.card(this.card, this.area, {this.voiceReply = false})
     : text = '',
+      audioPath = null,
+      duration = Duration.zero,
+      isVoiceNote = false,
       isUser = false,
       isLoading = false,
       isError = false,
@@ -298,9 +417,13 @@ class _ChatItem {
     : text = '',
       card = null,
       area = '',
+      audioPath = null,
+      duration = Duration.zero,
       isUser = false,
       isLoading = true,
       isError = false,
+      voiceReply = false,
+      isVoiceNote = false,
       retryPrompt = '',
       retryQuoted = null;
 
@@ -310,14 +433,22 @@ class _ChatItem {
     this.retryQuoted,
   }) : card = null,
        area = '',
+       audioPath = null,
+       duration = Duration.zero,
        isUser = false,
        isLoading = false,
-       isError = true;
+       isError = true,
+       voiceReply = false,
+       isVoiceNote = false;
 
   final bool isUser;
   final bool isLoading;
   final bool isError;
+  final bool voiceReply;
+  final bool isVoiceNote;
   final String text;
+  final String? audioPath;
+  final Duration duration;
   final PlanSuggestion? card;
   final String area;
   final String retryPrompt;
@@ -367,26 +498,170 @@ class _ChatEmpty extends StatelessWidget {
 }
 
 class _UserBubble extends StatelessWidget {
-  const _UserBubble({required this.text});
+  const _UserBubble({
+    required this.text,
+    this.isVoiceNote = false,
+    this.audioPath,
+    this.duration = Duration.zero,
+    this.onSpeakTranscript,
+  });
 
   final String text;
+  final bool isVoiceNote;
+  final String? audioPath;
+  final Duration duration;
+  final VoidCallback? onSpeakTranscript;
 
   @override
   Widget build(BuildContext context) {
+    final isVoice = isVoiceNote;
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10, left: 48),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.fromLTRB(10, 8, 12, 10),
         decoration: BoxDecoration(
           color: AppColors.primary,
           borderRadius: BorderRadius.circular(18),
         ),
-        child: Text(
-          text,
-          style: context.textTheme.bodyMedium?.copyWith(color: Colors.white),
-        ),
+        child: isVoice
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _VoiceNoteBar(
+                    path: audioPath,
+                    duration: duration,
+                    onSpeakFallback: onSpeakTranscript,
+                  ),
+                  if (text.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      text,
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.92),
+                      ),
+                    ),
+                  ],
+                ],
+              )
+            : Text(
+                text,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white,
+                ),
+              ),
       ),
+    );
+  }
+}
+
+class _VoiceNoteBar extends StatefulWidget {
+  const _VoiceNoteBar({
+    required this.path,
+    required this.duration,
+    this.onSpeakFallback,
+  });
+
+  final String? path;
+  final Duration duration;
+  final VoidCallback? onSpeakFallback;
+
+  @override
+  State<_VoiceNoteBar> createState() => _VoiceNoteBarState();
+}
+
+class _VoiceNoteBarState extends State<_VoiceNoteBar> {
+  final _player = AudioPlayer();
+  var _playing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _player.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _playing = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_player.dispose());
+    super.dispose();
+  }
+
+  Future<void> _toggle() async {
+    final path = widget.path;
+    if (path == null || path.isEmpty) {
+      widget.onSpeakFallback?.call();
+      return;
+    }
+    if (_playing) {
+      await _player.pause();
+      if (mounted) setState(() => _playing = false);
+      return;
+    }
+    await _player.play(DeviceFileSource(path));
+    if (mounted) setState(() => _playing = true);
+  }
+
+  String _label() {
+    final d = widget.duration;
+    final total = d.inMilliseconds < 400 ? 1 : d.inSeconds.clamp(1, 99);
+    final m = (total ~/ 60).toString().padLeft(1, '0');
+    final s = (total % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: _toggle,
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _playing ? Icons.pause : Icons.play_arrow,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 92,
+          height: 22,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (var i = 0; i < 16; i++)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 1),
+                    child: Container(
+                      height: 6 + ((i * 7) % 16).toDouble(),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(
+                          alpha: _playing ? 0.95 : 0.7,
+                        ),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          _label(),
+          style: context.textTheme.labelLarge?.copyWith(color: Colors.white),
+        ),
+      ],
     );
   }
 }
@@ -577,12 +852,16 @@ class _RouteCardBubble extends StatelessWidget {
     required this.area,
     required this.onTap,
     required this.onReply,
+    required this.onReplayVoice,
+    this.canReplayVoice = false,
   });
 
   final PlanSuggestion suggestion;
   final String area;
   final VoidCallback onTap;
   final VoidCallback onReply;
+  final VoidCallback onReplayVoice;
+  final bool canReplayVoice;
 
   @override
   Widget build(BuildContext context) {
@@ -623,14 +902,43 @@ class _RouteCardBubble extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(suggestion.icon, color: Colors.white),
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.16),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  suggestion.icon,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              if (canReplayVoice) ...[
+                                const Spacer(),
+                                Tooltip(
+                                  message: t.plan.chat.replayVoice,
+                                  child: Material(
+                                    color: Colors.white.withValues(alpha: 0.16),
+                                    shape: const CircleBorder(),
+                                    child: InkWell(
+                                      customBorder: const CircleBorder(),
+                                      onTap: onReplayVoice,
+                                      child: const Padding(
+                                        padding: EdgeInsets.all(8),
+                                        child: Icon(
+                                          Icons.volume_up_rounded,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -794,16 +1102,24 @@ class _ChatComposer extends StatelessWidget {
     required this.focusNode,
     required this.quoted,
     required this.sending,
+    required this.listening,
+    required this.voiceDraft,
+    required this.hasText,
     required this.onClearQuote,
     required this.onSend,
+    required this.onMicTap,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final PlanSuggestion? quoted;
   final bool sending;
+  final bool listening;
+  final String voiceDraft;
+  final bool hasText;
   final VoidCallback onClearQuote;
   final VoidCallback onSend;
+  final VoidCallback onMicTap;
 
   @override
   Widget build(BuildContext context) {
@@ -860,6 +1176,26 @@ class _ChatComposer extends StatelessWidget {
                   ],
                 ),
               ),
+            if (listening)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.mic, color: AppColors.danger, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        voiceDraft.isEmpty ? t.plan.chat.listening : voiceDraft,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: AppColors.danger,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Row(
               children: [
                 Expanded(
@@ -868,7 +1204,7 @@ class _ChatComposer extends StatelessWidget {
                     focusNode: focusNode,
                     minLines: 1,
                     maxLines: 4,
-                    enabled: !sending,
+                    enabled: !sending && !listening,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => onSend(),
                     decoration: InputDecoration(
@@ -897,24 +1233,55 @@ class _ChatComposer extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  onPressed: sending ? null : onSend,
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimary,
-                    disabledBackgroundColor: AppColors.surfaceMuted,
+                if (sending)
+                  IconButton(
+                    onPressed: null,
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.surfaceMuted,
+                      foregroundColor: AppColors.onPrimary,
+                    ),
+                    icon: const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                else if (hasText)
+                  IconButton(
+                    onPressed: onSend,
+                    tooltip: t.plan.chat.reply,
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.onPrimary,
+                    ),
+                    icon: const Icon(Icons.send_rounded),
+                  )
+                else
+                  GestureDetector(
+                    onTap: onMicTap,
+                    child: Tooltip(
+                      message: listening
+                          ? t.plan.chat.listening
+                          : t.plan.chat.holdToSpeak,
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: listening
+                              ? AppColors.danger
+                              : AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          listening ? Icons.mic : Icons.mic_none,
+                          color: AppColors.onPrimary,
+                        ),
+                      ),
+                    ),
                   ),
-                  icon: sending
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.send_rounded),
-                ),
               ],
             ),
           ],

@@ -675,6 +675,21 @@ class Translations$plan$chat$tr {
 	/// tr: 'Tekrar dene'
 	String get retry => 'Tekrar dene';
 
+	/// tr: 'Konuşmak için dokun'
+	String get holdToSpeak => 'Konuşmak için dokun';
+
+	/// tr: 'Kayıt alınıyor… tekrar dokununca gönderilir'
+	String get listening => 'Kayıt alınıyor… tekrar dokununca gönderilir';
+
+	/// tr: 'Mikrofon veya konuşma tanıma kullanılamıyor.'
+	String get voiceUnavailable => 'Mikrofon veya konuşma tanıma kullanılamıyor.';
+
+	/// tr: 'Ses algılanmadı. Tekrar dokun.'
+	String get voiceEmpty => 'Ses algılanmadı. Tekrar dokun.';
+
+	/// tr: 'Tekrar dinle'
+	String get replayVoice => 'Tekrar dinle';
+
 	late final Translations$plan$chat$thinking$tr thinking = Translations$plan$chat$thinking$tr.internal(_root);
 }
 
@@ -1158,6 +1173,11 @@ extension on Translations {
 			'plan.chat.error' => 'Rota önerilemedi. Tekrar dene.',
 			'plan.chat.errorAuth' => 'Model isteği kabul etmedi (LLM anahtarı). Colab çıktısındaki anahtarı .env ile eşle.',
 			'plan.chat.retry' => 'Tekrar dene',
+			'plan.chat.holdToSpeak' => 'Konuşmak için dokun',
+			'plan.chat.listening' => 'Kayıt alınıyor… tekrar dokununca gönderilir',
+			'plan.chat.voiceUnavailable' => 'Mikrofon veya konuşma tanıma kullanılamıyor.',
+			'plan.chat.voiceEmpty' => 'Ses algılanmadı. Tekrar dokun.',
+			'plan.chat.replayVoice' => 'Tekrar dinle',
 			'plan.chat.thinking.s1' => 'Düşünüyor…',
 			'plan.chat.thinking.s2' => 'Ruh halini seçiyor…',
 			'plan.chat.thinking.s3' => 'Rotayı örüyor…',

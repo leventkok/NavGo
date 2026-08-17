@@ -141,6 +141,11 @@
       "error": "Couldn’t suggest a route. Try again.",
       "errorAuth": "The model rejected the request (LLM key). Match the Colab key in .env.",
       "retry": "Try again",
+      "holdToSpeak": "Tap to speak",
+      "listening": "Recording… tap again to send",
+      "voiceUnavailable": "Microphone or speech recognition isn’t available.",
+      "voiceEmpty": "Nothing heard. Tap the mic again.",
+      "replayVoice": "Play again",
       "thinking": {
         "s1": "Thinking…",
         "s2": "Picking a mood…",

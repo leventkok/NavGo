@@ -392,6 +392,11 @@ class _Translations$plan$chat$en extends Translations$plan$chat$tr {
 	@override String get error => 'Couldn’t suggest a route. Try again.';
 	@override String get errorAuth => 'The model rejected the request (LLM key). Match the Colab key in .env.';
 	@override String get retry => 'Try again';
+	@override String get holdToSpeak => 'Tap to speak';
+	@override String get listening => 'Recording… tap again to send';
+	@override String get voiceUnavailable => 'Microphone or speech recognition isn’t available.';
+	@override String get voiceEmpty => 'Nothing heard. Tap the mic again.';
+	@override String get replayVoice => 'Play again';
 	@override late final _Translations$plan$chat$thinking$en thinking = _Translations$plan$chat$thinking$en._(_root);
 }
 
@@ -777,6 +782,11 @@ extension on TranslationsEn {
 			'plan.chat.error' => 'Couldn’t suggest a route. Try again.',
 			'plan.chat.errorAuth' => 'The model rejected the request (LLM key). Match the Colab key in .env.',
 			'plan.chat.retry' => 'Try again',
+			'plan.chat.holdToSpeak' => 'Tap to speak',
+			'plan.chat.listening' => 'Recording… tap again to send',
+			'plan.chat.voiceUnavailable' => 'Microphone or speech recognition isn’t available.',
+			'plan.chat.voiceEmpty' => 'Nothing heard. Tap the mic again.',
+			'plan.chat.replayVoice' => 'Play again',
 			'plan.chat.thinking.s1' => 'Thinking…',
 			'plan.chat.thinking.s2' => 'Picking a mood…',
 			'plan.chat.thinking.s3' => 'Shaping the route…',
