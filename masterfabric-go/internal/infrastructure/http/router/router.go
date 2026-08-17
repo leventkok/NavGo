@@ -126,12 +126,10 @@ func New(deps Dependencies) *chi.Mux {
 			})
 		})
 
-		// Channel preflight (device JWT)
+		// Channel routes (single path pattern — chi forbids mounting /c/{channelId} twice)
 		if deps.SecurityHandler != nil && deps.AuthService != nil {
-			r.Route("/c/{channelId}", func(r chi.Router) {
-				r.With(middleware.JWTAuth(deps.AuthService), middleware.VerifyChannelAccess).
-					Get("/preflight", deps.SecurityHandler.ChannelPreflight)
-			})
+			r.With(middleware.JWTAuth(deps.AuthService), middleware.VerifyChannelAccess).
+				Get("/c/{channelId}/preflight", deps.SecurityHandler.ChannelPreflight)
 		}
 
 		// Protected routes (require JWT)
@@ -146,13 +144,11 @@ func New(deps Dependencies) *chi.Mux {
 				r.Use(middleware.TenantResolverWithWorkspace(deps.OrgRepo, deps.WorkspaceRepo))
 			}
 
-			// Bind + channel me
+			// Bind + channel me + scans
 			if deps.SecurityHandler != nil {
 				r.With(middleware.RateLimit(authLimiter, "bind")).Post("/auth/bind", deps.SecurityHandler.Bind)
-				r.Route("/c/{channelId}", func(r chi.Router) {
-					r.With(middleware.RequireBlended, middleware.VerifyChannelAccess).
-						Get("/me", deps.SecurityHandler.ChannelMe)
-				})
+				r.With(middleware.RequireBlended, middleware.VerifyChannelAccess).
+					Get("/c/{channelId}/me", deps.SecurityHandler.ChannelMe)
 				r.Route("/security/scans", func(r chi.Router) {
 					r.Post("/", deps.SecurityHandler.IngestScan)
 					r.Get("/", deps.SecurityHandler.ListScans)
