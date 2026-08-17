@@ -105,6 +105,10 @@ func run() error {
 	} else {
 		defer db.Close()
 		log.Info("connected to postgres")
+		if err := database.MigrateUp(cfg.Database.DSN()); err != nil {
+			return fmt.Errorf("database migrate: %w", err)
+		}
+		log.Info("database migrations applied")
 	}
 
 	// Initialize Redis
