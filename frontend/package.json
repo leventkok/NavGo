@@ -10,7 +10,7 @@
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.79",
     "leaflet": "^1.9.4",
-    "next": "^15.3.2",
+    "next": "^16.3.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
