@@ -261,6 +261,7 @@ func New(deps Dependencies) *chi.Mux {
 						r.Post("/parse-intent", deps.LLMHandler.ParseIntent)
 						r.Post("/pick-stops", deps.LLMHandler.PickStops)
 						r.Post("/suggest-day-cards", deps.LLMHandler.SuggestDayCards)
+						r.Post("/suggest-route-card", deps.LLMHandler.SuggestRouteCard)
 					})
 				}
 

@@ -112,9 +112,9 @@ class _Translations$plan$ru extends Translations$plan$tr {
 
 	// Translations
 	@override String get selectLocation => 'Выбрать местоположение';
-	@override String get quickStart => 'Быстрый старт';
-	@override String get quickStartNeedLocation => 'Выберите местоположение, затем тип маршрута.';
-	@override String quickStartWithArea({required Object area}) => 'Выберите тип маршрута для ${area} — реальные места по вашим интересам.';
+	@override String get quickStart => 'Маршруты для вас';
+	@override String get quickStartNeedLocation => 'Выберите местоположение, затем откройте маршрут.';
+	@override String get quickStartBody => 'Выберите настроение, посмотрите остановки, затем соберите день.';
 	@override String get defaultPlanTitle => 'План дня';
 	@override String routeSummary({required Object km, required Object mins, required Object provider}) => '${km} км · ~${mins} мин · ${provider}';
 	@override String get greetingMorning => 'Доброе утро';
@@ -145,8 +145,11 @@ class _Translations$plan$ru extends Translations$plan$tr {
 	@override String get errorNotEnoughPlaces => 'В этом районе недостаточно мест. Попробуйте другой пункт назначения или тип маршрута.';
 	@override String get errorGeneric => 'Не удалось создать план. Попробуйте ещё раз.';
 	@override late final _Translations$plan$startSheet$ru startSheet = _Translations$plan$startSheet$ru._(_root);
+	@override late final _Translations$plan$chat$ru chat = _Translations$plan$chat$ru._(_root);
 	@override late final _Translations$plan$suggestion$ru suggestion = _Translations$plan$suggestion$ru._(_root);
-	@override String get suggestionsLoading => 'Подбираем идеи для вашего района…';
+	@override String get suggestionsLoading => 'Подбираем маршруты…';
+	@override late final _Translations$plan$preview$ru preview = _Translations$plan$preview$ru._(_root);
+	@override late final _Translations$plan$routelistFallback$ru routelistFallback = _Translations$plan$routelistFallback$ru._(_root);
 }
 
 // Path: location
@@ -366,7 +369,30 @@ class _Translations$plan$startSheet$ru extends Translations$plan$startSheet$tr {
 	@override String get destinationHint => 'Напр. Кадыкёй, Стамбул';
 	@override String get useMyLocation => 'Моё местоположение';
 	@override String get resolvingLocation => 'Определяем местоположение…';
+	@override String get openInChat => 'Открыть чат';
 	@override String get areaRequiredSnack => 'Сначала введите город или район';
+}
+
+// Path: plan.chat
+class _Translations$plan$chat$ru extends Translations$plan$chat$tr {
+	_Translations$plan$chat$ru._(TranslationsRu root) : this._root = root, super.internal(root);
+
+	final TranslationsRu _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Планировать в чате';
+	@override String get emptyTitle => 'Опишите день без геолокации';
+	@override String get emptyBody => 'Напишите город, темп и что хотите увидеть — доступ к локации не нужен.';
+	@override String get inputHint => 'Что хотите делать сегодня?';
+	@override String get replyHint => 'Как изменить этот маршрут?';
+	@override String get reply => 'Ответить';
+	@override String get more => 'Ещё';
+	@override String get quoting => 'Ответ на маршрут';
+	@override String get tapToPreview => 'Нажмите для предпросмотра';
+	@override String get error => 'Не удалось предложить маршрут. Попробуйте ещё раз.';
+	@override String get errorAuth => 'Модель отклонила запрос (ключ LLM). Сверьте ключ Colab с .env.';
+	@override String get retry => 'Повторить';
+	@override late final _Translations$plan$chat$thinking$ru thinking = _Translations$plan$chat$thinking$ru._(_root);
 }
 
 // Path: plan.suggestion
@@ -381,6 +407,33 @@ class _Translations$plan$suggestion$ru extends Translations$plan$suggestion$tr {
 	@override late final _Translations$plan$suggestion$coffeeRoute$ru coffeeRoute = _Translations$plan$suggestion$coffeeRoute$ru._(_root);
 	@override late final _Translations$plan$suggestion$museumCulture$ru museumCulture = _Translations$plan$suggestion$museumCulture$ru._(_root);
 	@override late final _Translations$plan$suggestion$parksLakes$ru parksLakes = _Translations$plan$suggestion$parksLakes$ru._(_root);
+}
+
+// Path: plan.preview
+class _Translations$plan$preview$ru extends Translations$plan$preview$tr {
+	_Translations$plan$preview$ru._(TranslationsRu root) : this._root = root, super.internal(root);
+
+	final TranslationsRu _root; // ignore: unused_field
+
+	// Translations
+	@override String get buildRoute => 'Собрать маршрут';
+	@override String get dismiss => 'Не сейчас';
+	@override String get planAnyway => 'Всё равно спланировать';
+	@override String get failed => 'Не удалось загрузить остановки. Повторите или спланируйте без предпросмотра.';
+	@override String get empty => 'Для этого настроения недостаточно мест.';
+}
+
+// Path: plan.routelistFallback
+class _Translations$plan$routelistFallback$ru extends Translations$plan$routelistFallback$tr {
+	_Translations$plan$routelistFallback$ru._(TranslationsRu root) : this._root = root, super.internal(root);
+
+	final TranslationsRu _root; // ignore: unused_field
+
+	// Translations
+	@override late final _Translations$plan$routelistFallback$firstDay$ru firstDay = _Translations$plan$routelistFallback$firstDay$ru._(_root);
+	@override late final _Translations$plan$routelistFallback$slow$ru slow = _Translations$plan$routelistFallback$slow$ru._(_root);
+	@override late final _Translations$plan$routelistFallback$culture$ru culture = _Translations$plan$routelistFallback$culture$ru._(_root);
+	@override late final _Translations$plan$routelistFallback$food$ru food = _Translations$plan$routelistFallback$food$ru._(_root);
 }
 
 // Path: location.settingsRequired
@@ -423,6 +476,20 @@ class _Translations$explore$destinations$ru extends Translations$explore$destina
 	@override late final _Translations$explore$destinations$lisbon$ru lisbon = _Translations$explore$destinations$lisbon$ru._(_root);
 	@override late final _Translations$explore$destinations$tokyo$ru tokyo = _Translations$explore$destinations$tokyo$ru._(_root);
 	@override late final _Translations$explore$destinations$barcelona$ru barcelona = _Translations$explore$destinations$barcelona$ru._(_root);
+}
+
+// Path: plan.chat.thinking
+class _Translations$plan$chat$thinking$ru extends Translations$plan$chat$thinking$tr {
+	_Translations$plan$chat$thinking$ru._(TranslationsRu root) : this._root = root, super.internal(root);
+
+	final TranslationsRu _root; // ignore: unused_field
+
+	// Translations
+	@override String get s1 => 'Думаю…';
+	@override String get s2 => 'Выбираю настроение…';
+	@override String get s3 => 'Собираю маршрут…';
+	@override String get s4 => 'Упрощаю остановки…';
+	@override String get s5 => 'Сверяю с городом…';
 }
 
 // Path: plan.suggestion.historicCenter
@@ -478,6 +545,50 @@ class _Translations$plan$suggestion$parksLakes$ru extends Translations$plan$sugg
 	// Translations
 	@override String get title => 'Парки и озёра';
 	@override String get subtitle => 'Зелень · прогулка · отдых';
+}
+
+// Path: plan.routelistFallback.firstDay
+class _Translations$plan$routelistFallback$firstDay$ru extends Translations$plan$routelistFallback$firstDay$tr {
+	_Translations$plan$routelistFallback$firstDay$ru._(TranslationsRu root) : this._root = root, super.internal(root);
+
+	final TranslationsRu _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Впервые в городе?';
+	@override String get subtitle => 'Быстрый круг по знаковым местам';
+}
+
+// Path: plan.routelistFallback.slow
+class _Translations$plan$routelistFallback$slow$ru extends Translations$plan$routelistFallback$slow$tr {
+	_Translations$plan$routelistFallback$slow$ru._(TranslationsRu root) : this._root = root, super.internal(root);
+
+	final TranslationsRu _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Без спешки';
+	@override String get subtitle => 'Кофе, парк и короткая прогулка';
+}
+
+// Path: plan.routelistFallback.culture
+class _Translations$plan$routelistFallback$culture$ru extends Translations$plan$routelistFallback$culture$tr {
+	_Translations$plan$routelistFallback$culture$ru._(TranslationsRu root) : this._root = root, super.internal(root);
+
+	final TranslationsRu _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Послушать историю';
+	@override String get subtitle => 'Музеи, памятники, старые улицы';
+}
+
+// Path: plan.routelistFallback.food
+class _Translations$plan$routelistFallback$food$ru extends Translations$plan$routelistFallback$food$tr {
+	_Translations$plan$routelistFallback$food$ru._(TranslationsRu root) : this._root = root, super.internal(root);
+
+	final TranslationsRu _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Вкусы города';
+	@override String get subtitle => 'Рынок, локальная еда, уличные закуски';
 }
 
 // Path: explore.destinations.istanbul
@@ -614,9 +725,9 @@ extension on TranslationsRu {
 			'onboarding.transport.driveSubtitle' => 'На машине',
 			'onboarding.transport.bikeSubtitle' => 'Спокойный темп',
 			'plan.selectLocation' => 'Выбрать местоположение',
-			'plan.quickStart' => 'Быстрый старт',
-			'plan.quickStartNeedLocation' => 'Выберите местоположение, затем тип маршрута.',
-			'plan.quickStartWithArea' => ({required Object area}) => 'Выберите тип маршрута для ${area} — реальные места по вашим интересам.',
+			'plan.quickStart' => 'Маршруты для вас',
+			'plan.quickStartNeedLocation' => 'Выберите местоположение, затем откройте маршрут.',
+			'plan.quickStartBody' => 'Выберите настроение, посмотрите остановки, затем соберите день.',
 			'plan.defaultPlanTitle' => 'План дня',
 			'plan.routeSummary' => ({required Object km, required Object mins, required Object provider}) => '${km} км · ~${mins} мин · ${provider}',
 			'plan.greetingMorning' => 'Доброе утро',
@@ -652,7 +763,25 @@ extension on TranslationsRu {
 			'plan.startSheet.destinationHint' => 'Напр. Кадыкёй, Стамбул',
 			'plan.startSheet.useMyLocation' => 'Моё местоположение',
 			'plan.startSheet.resolvingLocation' => 'Определяем местоположение…',
+			'plan.startSheet.openInChat' => 'Открыть чат',
 			'plan.startSheet.areaRequiredSnack' => 'Сначала введите город или район',
+			'plan.chat.title' => 'Планировать в чате',
+			'plan.chat.emptyTitle' => 'Опишите день без геолокации',
+			'plan.chat.emptyBody' => 'Напишите город, темп и что хотите увидеть — доступ к локации не нужен.',
+			'plan.chat.inputHint' => 'Что хотите делать сегодня?',
+			'plan.chat.replyHint' => 'Как изменить этот маршрут?',
+			'plan.chat.reply' => 'Ответить',
+			'plan.chat.more' => 'Ещё',
+			'plan.chat.quoting' => 'Ответ на маршрут',
+			'plan.chat.tapToPreview' => 'Нажмите для предпросмотра',
+			'plan.chat.error' => 'Не удалось предложить маршрут. Попробуйте ещё раз.',
+			'plan.chat.errorAuth' => 'Модель отклонила запрос (ключ LLM). Сверьте ключ Colab с .env.',
+			'plan.chat.retry' => 'Повторить',
+			'plan.chat.thinking.s1' => 'Думаю…',
+			'plan.chat.thinking.s2' => 'Выбираю настроение…',
+			'plan.chat.thinking.s3' => 'Собираю маршрут…',
+			'plan.chat.thinking.s4' => 'Упрощаю остановки…',
+			'plan.chat.thinking.s5' => 'Сверяю с городом…',
 			'plan.suggestion.historicCenter.title' => 'Исторический центр',
 			'plan.suggestion.historicCenter.subtitle' => 'Старые улицы · площадь · кофе',
 			'plan.suggestion.waterfront.title' => 'Набережная / порт',
@@ -663,7 +792,20 @@ extension on TranslationsRu {
 			'plan.suggestion.museumCulture.subtitle' => 'Музей · галерея · памятник',
 			'plan.suggestion.parksLakes.title' => 'Парки и озёра',
 			'plan.suggestion.parksLakes.subtitle' => 'Зелень · прогулка · отдых',
-			'plan.suggestionsLoading' => 'Подбираем идеи для вашего района…',
+			'plan.suggestionsLoading' => 'Подбираем маршруты…',
+			'plan.preview.buildRoute' => 'Собрать маршрут',
+			'plan.preview.dismiss' => 'Не сейчас',
+			'plan.preview.planAnyway' => 'Всё равно спланировать',
+			'plan.preview.failed' => 'Не удалось загрузить остановки. Повторите или спланируйте без предпросмотра.',
+			'plan.preview.empty' => 'Для этого настроения недостаточно мест.',
+			'plan.routelistFallback.firstDay.title' => 'Впервые в городе?',
+			'plan.routelistFallback.firstDay.subtitle' => 'Быстрый круг по знаковым местам',
+			'plan.routelistFallback.slow.title' => 'Без спешки',
+			'plan.routelistFallback.slow.subtitle' => 'Кофе, парк и короткая прогулка',
+			'plan.routelistFallback.culture.title' => 'Послушать историю',
+			'plan.routelistFallback.culture.subtitle' => 'Музеи, памятники, старые улицы',
+			'plan.routelistFallback.food.title' => 'Вкусы города',
+			'plan.routelistFallback.food.subtitle' => 'Рынок, локальная еда, уличные закуски',
 			'location.requiredTitle' => 'Нужно местоположение',
 			'location.failedTitle' => 'Не удалось определить местоположение',
 			'location.manualTitle' => 'Город или район',

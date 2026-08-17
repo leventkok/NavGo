@@ -112,9 +112,9 @@ class _Translations$plan$en extends Translations$plan$tr {
 
 	// Translations
 	@override String get selectLocation => 'Select location';
-	@override String get quickStart => 'Quick start';
-	@override String get quickStartNeedLocation => 'Pick a location, then choose a route type.';
-	@override String quickStartWithArea({required Object area}) => 'Pick a route type for ${area} — real places based on your interests.';
+	@override String get quickStart => 'Routes for you';
+	@override String get quickStartNeedLocation => 'Pick a location, then open a route suggestion.';
+	@override String get quickStartBody => 'Pick a mood, preview the stops, then build your day.';
 	@override String get defaultPlanTitle => 'Day plan';
 	@override String routeSummary({required Object km, required Object mins, required Object provider}) => '${km} km · ~${mins} min · ${provider}';
 	@override String get greetingMorning => 'Good morning';
@@ -145,8 +145,11 @@ class _Translations$plan$en extends Translations$plan$tr {
 	@override String get errorNotEnoughPlaces => 'Not enough places found in this area. Try another destination or route type.';
 	@override String get errorGeneric => 'Couldn’t create the plan. Please try again.';
 	@override late final _Translations$plan$startSheet$en startSheet = _Translations$plan$startSheet$en._(_root);
+	@override late final _Translations$plan$chat$en chat = _Translations$plan$chat$en._(_root);
 	@override late final _Translations$plan$suggestion$en suggestion = _Translations$plan$suggestion$en._(_root);
-	@override String get suggestionsLoading => 'Preparing suggestions for your area…';
+	@override String get suggestionsLoading => 'Preparing routes…';
+	@override late final _Translations$plan$preview$en preview = _Translations$plan$preview$en._(_root);
+	@override late final _Translations$plan$routelistFallback$en routelistFallback = _Translations$plan$routelistFallback$en._(_root);
 }
 
 // Path: location
@@ -366,7 +369,30 @@ class _Translations$plan$startSheet$en extends Translations$plan$startSheet$tr {
 	@override String get destinationHint => 'e.g. Kadıköy, Istanbul';
 	@override String get useMyLocation => 'Use my location';
 	@override String get resolvingLocation => 'Getting location…';
+	@override String get openInChat => 'Open in chat';
 	@override String get areaRequiredSnack => 'Enter a city or district first';
+}
+
+// Path: plan.chat
+class _Translations$plan$chat$en extends Translations$plan$chat$tr {
+	_Translations$plan$chat$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Plan with chat';
+	@override String get emptyTitle => 'Describe the day';
+	@override String get emptyBody => 'Tell us the city, pace, and what you want to see — no location sharing needed.';
+	@override String get inputHint => 'What do you want to do today?';
+	@override String get replyHint => 'How should we change this route?';
+	@override String get reply => 'Reply';
+	@override String get more => 'More';
+	@override String get quoting => 'Replying to route';
+	@override String get tapToPreview => 'Tap to preview';
+	@override String get error => 'Couldn’t suggest a route. Try again.';
+	@override String get errorAuth => 'The model rejected the request (LLM key). Match the Colab key in .env.';
+	@override String get retry => 'Try again';
+	@override late final _Translations$plan$chat$thinking$en thinking = _Translations$plan$chat$thinking$en._(_root);
 }
 
 // Path: plan.suggestion
@@ -381,6 +407,33 @@ class _Translations$plan$suggestion$en extends Translations$plan$suggestion$tr {
 	@override late final _Translations$plan$suggestion$coffeeRoute$en coffeeRoute = _Translations$plan$suggestion$coffeeRoute$en._(_root);
 	@override late final _Translations$plan$suggestion$museumCulture$en museumCulture = _Translations$plan$suggestion$museumCulture$en._(_root);
 	@override late final _Translations$plan$suggestion$parksLakes$en parksLakes = _Translations$plan$suggestion$parksLakes$en._(_root);
+}
+
+// Path: plan.preview
+class _Translations$plan$preview$en extends Translations$plan$preview$tr {
+	_Translations$plan$preview$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get buildRoute => 'Build this route';
+	@override String get dismiss => 'Not now';
+	@override String get planAnyway => 'Plan anyway';
+	@override String get failed => 'Couldn’t load stops. Retry or plan anyway.';
+	@override String get empty => 'Not enough places found for this mood.';
+}
+
+// Path: plan.routelistFallback
+class _Translations$plan$routelistFallback$en extends Translations$plan$routelistFallback$tr {
+	_Translations$plan$routelistFallback$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override late final _Translations$plan$routelistFallback$firstDay$en firstDay = _Translations$plan$routelistFallback$firstDay$en._(_root);
+	@override late final _Translations$plan$routelistFallback$slow$en slow = _Translations$plan$routelistFallback$slow$en._(_root);
+	@override late final _Translations$plan$routelistFallback$culture$en culture = _Translations$plan$routelistFallback$culture$en._(_root);
+	@override late final _Translations$plan$routelistFallback$food$en food = _Translations$plan$routelistFallback$food$en._(_root);
 }
 
 // Path: location.settingsRequired
@@ -423,6 +476,20 @@ class _Translations$explore$destinations$en extends Translations$explore$destina
 	@override late final _Translations$explore$destinations$lisbon$en lisbon = _Translations$explore$destinations$lisbon$en._(_root);
 	@override late final _Translations$explore$destinations$tokyo$en tokyo = _Translations$explore$destinations$tokyo$en._(_root);
 	@override late final _Translations$explore$destinations$barcelona$en barcelona = _Translations$explore$destinations$barcelona$en._(_root);
+}
+
+// Path: plan.chat.thinking
+class _Translations$plan$chat$thinking$en extends Translations$plan$chat$thinking$tr {
+	_Translations$plan$chat$thinking$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get s1 => 'Thinking…';
+	@override String get s2 => 'Picking a mood…';
+	@override String get s3 => 'Shaping the route…';
+	@override String get s4 => 'Keeping the stops simple…';
+	@override String get s5 => 'Checking it fits the place…';
 }
 
 // Path: plan.suggestion.historicCenter
@@ -478,6 +545,50 @@ class _Translations$plan$suggestion$parksLakes$en extends Translations$plan$sugg
 	// Translations
 	@override String get title => 'Parks & lakes';
 	@override String get subtitle => 'Green space · walk · unwind';
+}
+
+// Path: plan.routelistFallback.firstDay
+class _Translations$plan$routelistFallback$firstDay$en extends Translations$plan$routelistFallback$firstDay$tr {
+	_Translations$plan$routelistFallback$firstDay$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'New in town?';
+	@override String get subtitle => 'A fast loop of the iconic stops';
+}
+
+// Path: plan.routelistFallback.slow
+class _Translations$plan$routelistFallback$slow$en extends Translations$plan$routelistFallback$slow$tr {
+	_Translations$plan$routelistFallback$slow$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Take it slow';
+	@override String get subtitle => 'Coffee, a park, and a short walk';
+}
+
+// Path: plan.routelistFallback.culture
+class _Translations$plan$routelistFallback$culture$en extends Translations$plan$routelistFallback$culture$tr {
+	_Translations$plan$routelistFallback$culture$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Hear the story';
+	@override String get subtitle => 'Museums, monuments, old streets';
+}
+
+// Path: plan.routelistFallback.food
+class _Translations$plan$routelistFallback$food$en extends Translations$plan$routelistFallback$food$tr {
+	_Translations$plan$routelistFallback$food$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Taste the city';
+	@override String get subtitle => 'Local shops, markets, street food';
 }
 
 // Path: explore.destinations.istanbul
@@ -614,9 +725,9 @@ extension on TranslationsEn {
 			'onboarding.transport.driveSubtitle' => 'By car',
 			'onboarding.transport.bikeSubtitle' => 'Easy pace',
 			'plan.selectLocation' => 'Select location',
-			'plan.quickStart' => 'Quick start',
-			'plan.quickStartNeedLocation' => 'Pick a location, then choose a route type.',
-			'plan.quickStartWithArea' => ({required Object area}) => 'Pick a route type for ${area} — real places based on your interests.',
+			'plan.quickStart' => 'Routes for you',
+			'plan.quickStartNeedLocation' => 'Pick a location, then open a route suggestion.',
+			'plan.quickStartBody' => 'Pick a mood, preview the stops, then build your day.',
 			'plan.defaultPlanTitle' => 'Day plan',
 			'plan.routeSummary' => ({required Object km, required Object mins, required Object provider}) => '${km} km · ~${mins} min · ${provider}',
 			'plan.greetingMorning' => 'Good morning',
@@ -652,7 +763,25 @@ extension on TranslationsEn {
 			'plan.startSheet.destinationHint' => 'e.g. Kadıköy, Istanbul',
 			'plan.startSheet.useMyLocation' => 'Use my location',
 			'plan.startSheet.resolvingLocation' => 'Getting location…',
+			'plan.startSheet.openInChat' => 'Open in chat',
 			'plan.startSheet.areaRequiredSnack' => 'Enter a city or district first',
+			'plan.chat.title' => 'Plan with chat',
+			'plan.chat.emptyTitle' => 'Describe the day',
+			'plan.chat.emptyBody' => 'Tell us the city, pace, and what you want to see — no location sharing needed.',
+			'plan.chat.inputHint' => 'What do you want to do today?',
+			'plan.chat.replyHint' => 'How should we change this route?',
+			'plan.chat.reply' => 'Reply',
+			'plan.chat.more' => 'More',
+			'plan.chat.quoting' => 'Replying to route',
+			'plan.chat.tapToPreview' => 'Tap to preview',
+			'plan.chat.error' => 'Couldn’t suggest a route. Try again.',
+			'plan.chat.errorAuth' => 'The model rejected the request (LLM key). Match the Colab key in .env.',
+			'plan.chat.retry' => 'Try again',
+			'plan.chat.thinking.s1' => 'Thinking…',
+			'plan.chat.thinking.s2' => 'Picking a mood…',
+			'plan.chat.thinking.s3' => 'Shaping the route…',
+			'plan.chat.thinking.s4' => 'Keeping the stops simple…',
+			'plan.chat.thinking.s5' => 'Checking it fits the place…',
 			'plan.suggestion.historicCenter.title' => 'Historic center',
 			'plan.suggestion.historicCenter.subtitle' => 'Old streets · square · coffee',
 			'plan.suggestion.waterfront.title' => 'Waterfront / harbor',
@@ -663,7 +792,20 @@ extension on TranslationsEn {
 			'plan.suggestion.museumCulture.subtitle' => 'Museum · gallery · monument',
 			'plan.suggestion.parksLakes.title' => 'Parks & lakes',
 			'plan.suggestion.parksLakes.subtitle' => 'Green space · walk · unwind',
-			'plan.suggestionsLoading' => 'Preparing suggestions for your area…',
+			'plan.suggestionsLoading' => 'Preparing routes…',
+			'plan.preview.buildRoute' => 'Build this route',
+			'plan.preview.dismiss' => 'Not now',
+			'plan.preview.planAnyway' => 'Plan anyway',
+			'plan.preview.failed' => 'Couldn’t load stops. Retry or plan anyway.',
+			'plan.preview.empty' => 'Not enough places found for this mood.',
+			'plan.routelistFallback.firstDay.title' => 'New in town?',
+			'plan.routelistFallback.firstDay.subtitle' => 'A fast loop of the iconic stops',
+			'plan.routelistFallback.slow.title' => 'Take it slow',
+			'plan.routelistFallback.slow.subtitle' => 'Coffee, a park, and a short walk',
+			'plan.routelistFallback.culture.title' => 'Hear the story',
+			'plan.routelistFallback.culture.subtitle' => 'Museums, monuments, old streets',
+			'plan.routelistFallback.food.title' => 'Taste the city',
+			'plan.routelistFallback.food.subtitle' => 'Local shops, markets, street food',
 			'location.requiredTitle' => 'Location required',
 			'location.failedTitle' => 'Couldn’t get location',
 			'location.manualTitle' => 'City or district',

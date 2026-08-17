@@ -13,7 +13,9 @@ import 'package:navgo_mobile/views/plan/models/plan_suggestion.dart';
 import 'package:navgo_mobile/views/plan/models/preference_query_builder.dart';
 import 'package:navgo_mobile/views/plan/repository/service/planner_service.dart';
 import 'package:navgo_mobile/views/plan/view_model/planner_view_model.dart';
+import 'package:navgo_mobile/views/plan/plan_chat_view.dart';
 import 'package:navgo_mobile/views/plan/widgets/planner_widgets.dart';
+import 'package:navgo_mobile/views/plan/widgets/route_preview_sheet.dart';
 
 class PlanView extends StatelessWidget {
   const PlanView({super.key, required this.session});
@@ -38,7 +40,8 @@ class _PlanViewContent extends StatefulWidget {
   State<_PlanViewContent> createState() => _PlanViewContentState();
 }
 
-class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets {
+class _PlanViewContentState extends State<_PlanViewContent>
+    with PlannerWidgets {
   final _queryBuilder = const PreferenceQueryBuilder();
   final _location = LocationService();
   final _plannerService = PlannerService();
@@ -107,9 +110,9 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
             child: switch (state.phase) {
               PlannerPhase.home => _buildHome(context, state),
               PlannerPhase.working => Padding(
-                  padding: context.paddingNormal,
-                  child: progressBody(context, message: state.statusMessage),
-                ),
+                padding: context.paddingNormal,
+                child: progressBody(context, message: state.statusMessage),
+              ),
               PlannerPhase.done => _buildDone(context, state),
             },
           ),
@@ -168,22 +171,18 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
             ),
           ),
         const SizedBox(height: 16),
-        heroCard(
-          context,
-          onStart: () => _openStartSheet(context),
-        ),
+        heroCard(context, onStart: () => _openStartSheet(context)),
         if (state.errorMessage != null) ...[
           const SizedBox(height: 12),
           planErrorBanner(
             context,
             message: state.errorMessage!,
             canRetry: state.lastPlanEvent != null,
-            onRetry: () => context.read<PlannerViewModel>().add(
-                  PlannerRetryEvent(),
-                ),
+            onRetry: () =>
+                context.read<PlannerViewModel>().add(PlannerRetryEvent()),
             onDismiss: () => context.read<PlannerViewModel>().add(
-                  PlannerDismissErrorEvent(),
-                ),
+              PlannerDismissErrorEvent(),
+            ),
           ),
         ],
         const SizedBox(height: 28),
@@ -192,30 +191,30 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
         Text(
           areaLabel == null
               ? t.plan.quickStartNeedLocation
-              : (_loadingSuggestions
-                  ? t.plan.suggestionsLoading
-                  : t.plan.quickStartWithArea(area: areaLabel)),
+              : t.plan.quickStartBody,
           style: context.textTheme.bodyMedium,
         ),
         const SizedBox(height: 14),
         SizedBox(
-          height: 148,
-          child: _loadingSuggestions && areaLabel != null
-              ? const Center(child: CircularProgressIndicator())
-              : ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: suggestions.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 12),
-                  itemBuilder: (context, i) {
-                    final s = suggestions[i];
-                    return suggestionCard(
-                      context,
-                      suggestion: s,
-                      onTap: () => _startSuggestion(context, s),
-                    );
-                  },
-                ),
+          height: 176,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _loadingSuggestions && areaLabel != null
+                ? 4
+                : suggestions.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
+            itemBuilder: (context, i) {
+              if (_loadingSuggestions && areaLabel != null) {
+                return suggestionCardShimmer(context);
+              }
+              final s = suggestions[i];
+              return suggestionCard(
+                context,
+                suggestion: s,
+                onTap: () => _startSuggestion(context, s),
+              );
+            },
+          ),
         ),
         const SizedBox(height: 24),
         tipBanner(context),
@@ -267,27 +266,49 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
   void _startSuggestion(BuildContext context, PlanSuggestion s) {
     _ensureAreaThen(context, (area) async {
       if (!context.mounted) return;
-      final query = _buildQuery(s);
-      final prompt = '${s.title}. $area. ${s.subtitle}. $query';
-      context.read<PlannerViewModel>().add(
-            PlannerPlanDayEvent(
-              area: area,
-              query: query,
-              title: s.title,
-              prompt: prompt,
-              maxResults: widget.session.maxResultsForTempo,
-              travelMode: widget.session.apiTravelMode,
-              tempo: widget.session.tempo,
-              interests: widget.session.interests,
-              groupType: widget.session.groupType,
-              transportMode: widget.session.transportMode,
-            ),
-          );
+      await _previewThenPlan(context, area: area, suggestion: s);
     });
   }
 
+  Future<void> _previewThenPlan(
+    BuildContext context, {
+    required String area,
+    required PlanSuggestion suggestion,
+  }) async {
+    final query = _buildQuery(suggestion);
+    final outcome = await showModalBottomSheet<RoutePreviewOutcome>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => RoutePreviewSheet(
+        area: area,
+        suggestion: suggestion,
+        query: query,
+        service: _plannerService,
+      ),
+    );
+    if (outcome != RoutePreviewOutcome.confirmed || !context.mounted) return;
+    final prompt = '${suggestion.title}. $area. ${suggestion.subtitle}. $query';
+    context.read<PlannerViewModel>().add(
+      PlannerPlanDayEvent(
+        area: area,
+        query: query,
+        title: suggestion.title,
+        prompt: prompt,
+        maxResults: widget.session.maxResultsForTempo,
+        travelMode: widget.session.apiTravelMode,
+        tempo: widget.session.tempo,
+        interests: widget.session.interests,
+        groupType: widget.session.groupType,
+        transportMode: widget.session.transportMode,
+      ),
+    );
+  }
+
   Future<void> _openStartSheet(BuildContext context) async {
-    final vm = context.read<PlannerViewModel>();
     final pick = await showModalBottomSheet<_PlanStartPick>(
       context: context,
       isScrollControlled: true,
@@ -298,6 +319,7 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
       builder: (sheetContext) => _PlanStartSheet(
         initialArea: _area,
         location: _location,
+        plannerService: _plannerService,
         suggestions: _suggestions.isEmpty
             ? fallbackSuggestionsFor(t)
             : _suggestions,
@@ -307,29 +329,37 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
         },
       ),
     );
-    if (pick == null || !mounted) return;
+    if (pick == null || !context.mounted) return;
     await widget.session.setDefaultArea(pick.area);
     if (pick.area.trim() != _suggestionsForArea) {
       await _loadSuggestions(pick.area);
     }
-    if (!mounted) return;
-    final query = _buildQuery(pick.suggestion);
-    final prompt =
-        '${pick.suggestion.title}. ${pick.area}. ${pick.suggestion.subtitle}. $query';
-    vm.add(
-      PlannerPlanDayEvent(
+    if (!context.mounted) return;
+    if (pick.startPlan) {
+      final query = _buildQuery(pick.suggestion);
+      final prompt =
+          '${pick.suggestion.title}. ${pick.area}. ${pick.suggestion.subtitle}. $query';
+      context.read<PlannerViewModel>().add(
+        PlannerPlanDayEvent(
+          area: pick.area,
+          query: query,
+          title: pick.suggestion.title,
+          prompt: prompt,
+          maxResults: widget.session.maxResultsForTempo,
+          travelMode: widget.session.apiTravelMode,
+          tempo: widget.session.tempo,
+          interests: widget.session.interests,
+          groupType: widget.session.groupType,
+          transportMode: widget.session.transportMode,
+        ),
+      );
+    } else {
+      await _previewThenPlan(
+        context,
         area: pick.area,
-        query: query,
-        title: pick.suggestion.title,
-        prompt: prompt,
-        maxResults: widget.session.maxResultsForTempo,
-        travelMode: widget.session.apiTravelMode,
-        tempo: widget.session.tempo,
-        interests: widget.session.interests,
-        groupType: widget.session.groupType,
-        transportMode: widget.session.transportMode,
-      ),
-    );
+        suggestion: pick.suggestion,
+      );
+    }
     setState(() {});
   }
 
@@ -338,8 +368,9 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
     final route = state.route!;
     final km = (route.distanceMeters / 1000).toStringAsFixed(1);
     final mins = (route.durationSeconds / 60).round();
-    final title =
-        state.planTitle.isEmpty ? t.plan.defaultPlanTitle : state.planTitle;
+    final title = state.planTitle.isEmpty
+        ? t.plan.defaultPlanTitle
+        : state.planTitle;
 
     return Padding(
       padding: context.paddingNormal,
@@ -349,11 +380,7 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
           Text(title, style: context.textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(
-            t.plan.routeSummary(
-              km: km,
-              mins: mins,
-              provider: route.provider,
-            ),
+            t.plan.routeSummary(km: km, mins: mins, provider: route.provider),
             style: context.textTheme.bodyMedium,
           ),
           context.sizedHeightBoxNormal,
@@ -372,22 +399,29 @@ class _PlanViewContentState extends State<_PlanViewContent> with PlannerWidgets 
 }
 
 class _PlanStartPick {
-  const _PlanStartPick({required this.area, required this.suggestion});
+  const _PlanStartPick({
+    required this.area,
+    required this.suggestion,
+    this.startPlan = false,
+  });
 
   final String area;
   final PlanSuggestion suggestion;
+  final bool startPlan;
 }
 
 class _PlanStartSheet extends StatefulWidget {
   const _PlanStartSheet({
     required this.initialArea,
     required this.location,
+    required this.plannerService,
     required this.suggestions,
     required this.onAreaResolved,
   });
 
   final String initialArea;
   final LocationService location;
+  final PlannerService plannerService;
   final List<PlanSuggestion> suggestions;
   final Future<void> Function(String area) onAreaResolved;
 
@@ -445,10 +479,7 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
       );
       return;
     }
-    Navigator.pop(
-      context,
-      _PlanStartPick(area: area, suggestion: suggestion),
-    );
+    Navigator.pop(context, _PlanStartPick(area: area, suggestion: suggestion));
   }
 
   @override
@@ -462,7 +493,8 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
         left: 20,
         right: 20,
         top: 16,
-        bottom: MediaQuery.viewInsetsOf(context).bottom +
+        bottom:
+            MediaQuery.viewInsetsOf(context).bottom +
             MediaQuery.paddingOf(context).bottom +
             20,
       ),
@@ -481,12 +513,12 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(t.plan.startSheet.title, style: context.textTheme.headlineMedium),
-          const SizedBox(height: 8),
           Text(
-            t.plan.startSheet.body,
-            style: context.textTheme.bodyMedium,
+            t.plan.startSheet.title,
+            style: context.textTheme.headlineMedium,
           ),
+          const SizedBox(height: 8),
+          Text(t.plan.startSheet.body, style: context.textTheme.bodyMedium),
           const SizedBox(height: 16),
           TextField(
             controller: _areaCtrl,
@@ -496,23 +528,57 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
               hintText: t.plan.startSheet.destinationHint,
             ),
           ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _resolving ? null : _useLocation,
-              icon: _resolving
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.my_location, size: 18),
-              label: Text(
-                _resolving
-                    ? t.plan.startSheet.resolvingLocation
-                    : t.plan.startSheet.useMyLocation,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: TextButton.icon(
+                  onPressed: _resolving ? null : _useLocation,
+                  icon: _resolving
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.my_location, size: 18),
+                  label: Text(
+                    _resolving
+                        ? t.plan.startSheet.resolvingLocation
+                        : t.plan.startSheet.useMyLocation,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
-            ),
+              Flexible(
+                child: TextButton.icon(
+                  onPressed: () async {
+                    final built = await Navigator.of(context)
+                        .push<PlanChatBuildResult>(
+                          MaterialPageRoute(
+                            builder: (_) => PlanChatView(
+                              service: widget.plannerService,
+                              initialArea: _areaCtrl.text.trim(),
+                            ),
+                          ),
+                        );
+                    if (built == null || !context.mounted) return;
+                    Navigator.pop(
+                      context,
+                      _PlanStartPick(
+                        area: built.area,
+                        suggestion: built.suggestion,
+                        startPlan: true,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                  label: Text(
+                    t.plan.startSheet.openInChat,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           for (final s in suggestions) ...[

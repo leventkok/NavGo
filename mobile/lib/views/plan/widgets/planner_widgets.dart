@@ -5,6 +5,7 @@ import 'package:navgo_mobile/core/themes/app_colors.dart';
 import 'package:navgo_mobile/core/widgets/primary_button.dart';
 import 'package:navgo_mobile/i18n/strings.g.dart';
 import 'package:navgo_mobile/views/plan/models/plan_suggestion.dart';
+import 'package:shimmer/shimmer.dart';
 
 mixin PlannerWidgets {
   String greetingForNow(Translations t) {
@@ -14,17 +15,16 @@ mixin PlannerWidgets {
     return t.plan.greetingEvening;
   }
 
-  Widget homeHeader(
-    BuildContext context, {
-    required String name,
-  }) {
+  Widget homeHeader(BuildContext context, {required String name}) {
     final t = context.t;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           t.plan.greetingLine(greeting: greetingForNow(t)),
-          style: context.textTheme.bodyLarge?.copyWith(color: AppColors.neutral),
+          style: context.textTheme.bodyLarge?.copyWith(
+            color: AppColors.neutral,
+          ),
         ),
         const SizedBox(height: 2),
         Text(name, style: context.textTheme.headlineMedium),
@@ -32,10 +32,7 @@ mixin PlannerWidgets {
     );
   }
 
-  Widget heroCard(
-    BuildContext context, {
-    required VoidCallback onStart,
-  }) {
+  Widget heroCard(BuildContext context, {required VoidCallback onStart}) {
     final t = context.t;
     return Container(
       width: double.infinity,
@@ -45,11 +42,7 @@ mixin PlannerWidgets {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            Color(0xFF1B7BB5),
-            Color(0xFF0F5F8A),
-          ],
+          colors: [AppColors.primary, Color(0xFF1B7BB5), Color(0xFF0F5F8A)],
         ),
       ),
       child: Column(
@@ -63,7 +56,9 @@ mixin PlannerWidgets {
             ),
             child: Text(
               t.plan.heroBadge,
-              style: context.textTheme.labelLarge?.copyWith(color: Colors.white),
+              style: context.textTheme.labelLarge?.copyWith(
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(height: 14),
@@ -110,41 +105,108 @@ mixin PlannerWidgets {
     required VoidCallback onTap,
   }) {
     return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(18),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          width: 210,
-          padding: const EdgeInsets.all(16),
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          width: 228,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.surfaceMuted),
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                suggestion.accent,
+                Color.lerp(suggestion.accent, const Color(0xFF0F1720), 0.45)!,
+              ],
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: suggestion.accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(suggestion.icon, color: Colors.white),
                 ),
-                child: Icon(suggestion.icon, color: suggestion.accent),
-              ),
-              const Spacer(),
-              Text(suggestion.title, style: context.textTheme.titleMedium),
-              const SizedBox(height: 4),
-              Text(
-                suggestion.subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: context.textTheme.bodyMedium,
-              ),
-            ],
+                const Spacer(),
+                Text(
+                  suggestion.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  suggestion.subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.88),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget suggestionCardShimmer(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: AppColors.surfaceMuted,
+      highlightColor: Colors.white,
+      child: Container(
+        width: 228,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceMuted,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            const Spacer(),
+            Container(
+              height: 16,
+              width: 160,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 12,
+              width: 120,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -172,7 +234,11 @@ mixin PlannerWidgets {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.error_outline, color: AppColors.danger, size: 22),
+              const Icon(
+                Icons.error_outline,
+                color: AppColors.danger,
+                size: 22,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -264,14 +330,15 @@ mixin PlannerWidgets {
     );
   }
 
-  Widget stopsTimeline(BuildContext context, {required List<PlaceModel> stops}) {
+  Widget stopsTimeline(
+    BuildContext context, {
+    required List<PlaceModel> stops,
+  }) {
     return ListView.separated(
       padding: EdgeInsets.zero,
       itemCount: stops.length,
-      separatorBuilder: (context, index) => Divider(
-        height: 28,
-        color: context.cSurfaceMuted,
-      ),
+      separatorBuilder: (context, index) =>
+          Divider(height: 28, color: context.cSurfaceMuted),
       itemBuilder: (context, i) {
         final p = stops[i];
         return Row(
@@ -287,7 +354,9 @@ mixin PlannerWidgets {
               ),
               child: Text(
                 '${i + 1}',
-                style: context.textTheme.labelLarge?.copyWith(color: Colors.white),
+                style: context.textTheme.labelLarge?.copyWith(
+                  color: Colors.white,
+                ),
               ),
             ),
             const SizedBox(width: 14),

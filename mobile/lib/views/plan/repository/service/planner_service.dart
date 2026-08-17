@@ -31,16 +31,17 @@ class PlanIntent {
 
 class PlannerService {
   PlannerService({Dio? dio, String? baseUrl})
-      : _dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: baseUrl ?? defaultApiBaseUrl(),
-                connectTimeout: const Duration(seconds: 60),
-                receiveTimeout: const Duration(seconds: 180),
-                sendTimeout: const Duration(seconds: 60),
-                headers: {'Content-Type': 'application/json'},
-              ),
-            );
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: baseUrl ?? defaultApiBaseUrl(),
+              connectTimeout: const Duration(seconds: 60),
+              receiveTimeout: const Duration(seconds: 180),
+              sendTimeout: const Duration(seconds: 60),
+              headers: {'Content-Type': 'application/json'},
+            ),
+          );
 
   final Dio _dio;
 
@@ -54,9 +55,13 @@ class PlannerService {
 
     const defineEmail = String.fromEnvironment('NAVGO_USER_EMAIL');
     const definePassword = String.fromEnvironment('NAVGO_USER_PASSWORD');
-    const allowDemoDefine = bool.fromEnvironment('NAVGO_ALLOW_DEMO', defaultValue: false);
+    const allowDemoDefine = bool.fromEnvironment(
+      'NAVGO_ALLOW_DEMO',
+      defaultValue: false,
+    );
 
-    final allowDemo = allowDemoDefine || currentAppFlavor == AppFlavor.dev || kDebugMode;
+    final allowDemo =
+        allowDemoDefine || currentAppFlavor == AppFlavor.dev || kDebugMode;
     var email = defineEmail;
     var password = definePassword;
     if (email.isEmpty || password.isEmpty) {
@@ -106,10 +111,7 @@ class PlannerService {
     final userToken = loginRes.data['token'] as String;
     final bind = await _dio.post(
       '/api/v1/auth/bind',
-      data: {
-        'handshake_id': handshakeId,
-        'barrier': barrier,
-      },
+      data: {'handshake_id': handshakeId, 'barrier': barrier},
       options: Options(headers: {'Authorization': 'Bearer $userToken'}),
     );
     final blended = bind.data['token'] as String;
@@ -232,6 +234,65 @@ class PlannerService {
     } on DioException {
       return null;
     }
+  }
+
+  /// Single routelist card from a chat prompt.
+  /// [previous] is the card being revised; [messages] is the full chat thread.
+  Future<PlanSuggestion> suggestRouteCard({
+    required String token,
+    required String prompt,
+    String locale = 'tr',
+    String defaultArea = '',
+    PlanSuggestion? previous,
+    List<Map<String, dynamic>> messages = const [],
+  }) async {
+    final data = <String, dynamic>{
+      'prompt': prompt,
+      'locale': locale,
+      'default_area': defaultArea,
+    };
+    if (previous != null) {
+      data['previous'] = {
+        'title': previous.title,
+        'subtitle': previous.subtitle,
+        'query': previous.query,
+        'icon': previous.iconKey,
+        'intent': previous.intent,
+        'area': previous.area,
+      };
+    }
+    if (messages.isNotEmpty) {
+      data['messages'] = messages;
+    }
+    final res = await _dio.post(
+      '/api/v1/llm/suggest-route-card',
+      data: data,
+      options: Options(
+        headers: {'Authorization': 'Bearer $token'},
+        receiveTimeout: const Duration(seconds: 180),
+        sendTimeout: const Duration(seconds: 60),
+      ),
+    );
+    final raw = res.data;
+    Map<String, dynamic> cardJson;
+    var area = '';
+    if (raw is Map && raw['card'] is Map) {
+      cardJson = Map<String, dynamic>.from(raw['card'] as Map);
+      area = (raw['area'] as String? ?? '').trim();
+    } else if (raw is Map) {
+      cardJson = Map<String, dynamic>.from(raw);
+      area = (raw['area'] as String? ?? '').trim();
+    } else {
+      throw StateError('invalid route card');
+    }
+    if (area.isNotEmpty) {
+      cardJson['area'] = area;
+    }
+    final card = PlanSuggestion.fromApi(cardJson);
+    if (card.title.isEmpty || card.query.isEmpty) {
+      throw StateError('invalid route card');
+    }
+    return card;
   }
 
   Future<List<PlaceModel>> searchPlaces({

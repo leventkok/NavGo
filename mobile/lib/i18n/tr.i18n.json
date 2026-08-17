@@ -86,9 +86,9 @@
   },
   "plan": {
     "selectLocation": "Konum seç",
-    "quickStart": "Hızlı başlangıç",
-    "quickStartNeedLocation": "Konumunu seç, ardından bir rota tipi seç.",
-    "quickStartWithArea": "{area} için bir rota tipi seç — ilgi alanlarına göre gerçek mekanlar.",
+    "quickStart": "Senin için rotalar",
+    "quickStartNeedLocation": "Konumunu seç, ardından bir rota önerisi aç.",
+    "quickStartBody": "Bir ruh hali seç, durakları önizle, sonra günü kur.",
     "defaultPlanTitle": "Gün planı",
     "routeSummary": "{km} km · ~{mins} dk · {provider}",
     "greetingMorning": "Günaydın",
@@ -125,7 +125,29 @@
       "destinationHint": "Örn. Kadıköy, İstanbul",
       "useMyLocation": "Konumumu kullan",
       "resolvingLocation": "Konum alınıyor…",
+      "openInChat": "Sohbette aç",
       "areaRequiredSnack": "Önce şehir veya ilçe yaz"
+    },
+    "chat": {
+      "title": "Konuşarak planla",
+      "emptyTitle": "Konum paylaşmadan anlat",
+      "emptyBody": "Gitmek istediğin günü yaz — şehir, tempo, ne görmek istediğin. Konum izni gerekmez.",
+      "inputHint": "Bugün ne yapmak istiyorsun?",
+      "replyHint": "Bu rotayı nasıl değiştirelim?",
+      "reply": "Cevap ver",
+      "more": "Diğer",
+      "quoting": "Yanıtlanan rota",
+      "tapToPreview": "Önizlemek için dokun",
+      "error": "Rota önerilemedi. Tekrar dene.",
+      "errorAuth": "Model isteği kabul etmedi (LLM anahtarı). Colab çıktısındaki anahtarı .env ile eşle.",
+      "retry": "Tekrar dene",
+      "thinking": {
+        "s1": "Düşünüyor…",
+        "s2": "Ruh halini seçiyor…",
+        "s3": "Rotayı örüyor…",
+        "s4": "Durakları sadeleştiriyor…",
+        "s5": "Konuma göre ayarlıyor…"
+      }
     },
     "suggestion": {
       "historicCenter": {
@@ -149,7 +171,32 @@
         "subtitle": "Yeşil alan · yürüyüş · dinlenme"
       }
     },
-    "suggestionsLoading": "Konuma göre öneriler hazırlanıyor…"
+    "suggestionsLoading": "Rotalar hazırlanıyor…",
+    "preview": {
+      "buildRoute": "Bu rotayı kur",
+      "dismiss": "Vazgeç",
+      "planAnyway": "Yine de planla",
+      "failed": "Duraklar yüklenemedi. Tekrar deneyebilir veya yine de planlayabilirsin.",
+      "empty": "Bu ruh hali için yeterince mekan bulunamadı."
+    },
+    "routelistFallback": {
+      "firstDay": {
+        "title": "Şehre yeni misin?",
+        "subtitle": "İkonik duraklarla hızlı bir tur"
+      },
+      "slow": {
+        "title": "Ağırdan al",
+        "subtitle": "Kahve, park ve kısa yürüyüş"
+      },
+      "culture": {
+        "title": "Hikâyeyi dinle",
+        "subtitle": "Müze, anıt ve eski sokaklar"
+      },
+      "food": {
+        "title": "Yerel tat",
+        "subtitle": "Esnaf, pazar ve sokak lezzeti"
+      }
+    }
   },
   "location": {
     "requiredTitle": "Konum gerekli",

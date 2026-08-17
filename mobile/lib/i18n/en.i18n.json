@@ -86,9 +86,9 @@
   },
   "plan": {
     "selectLocation": "Select location",
-    "quickStart": "Quick start",
-    "quickStartNeedLocation": "Pick a location, then choose a route type.",
-    "quickStartWithArea": "Pick a route type for {area} — real places based on your interests.",
+    "quickStart": "Routes for you",
+    "quickStartNeedLocation": "Pick a location, then open a route suggestion.",
+    "quickStartBody": "Pick a mood, preview the stops, then build your day.",
     "defaultPlanTitle": "Day plan",
     "routeSummary": "{km} km · ~{mins} min · {provider}",
     "greetingMorning": "Good morning",
@@ -125,7 +125,29 @@
       "destinationHint": "e.g. Kadıköy, Istanbul",
       "useMyLocation": "Use my location",
       "resolvingLocation": "Getting location…",
+      "openInChat": "Open in chat",
       "areaRequiredSnack": "Enter a city or district first"
+    },
+    "chat": {
+      "title": "Plan with chat",
+      "emptyTitle": "Describe the day",
+      "emptyBody": "Tell us the city, pace, and what you want to see — no location sharing needed.",
+      "inputHint": "What do you want to do today?",
+      "replyHint": "How should we change this route?",
+      "reply": "Reply",
+      "more": "More",
+      "quoting": "Replying to route",
+      "tapToPreview": "Tap to preview",
+      "error": "Couldn’t suggest a route. Try again.",
+      "errorAuth": "The model rejected the request (LLM key). Match the Colab key in .env.",
+      "retry": "Try again",
+      "thinking": {
+        "s1": "Thinking…",
+        "s2": "Picking a mood…",
+        "s3": "Shaping the route…",
+        "s4": "Keeping the stops simple…",
+        "s5": "Checking it fits the place…"
+      }
     },
     "suggestion": {
       "historicCenter": {
@@ -149,7 +171,32 @@
         "subtitle": "Green space · walk · unwind"
       }
     },
-    "suggestionsLoading": "Preparing suggestions for your area…"
+    "suggestionsLoading": "Preparing routes…",
+    "preview": {
+      "buildRoute": "Build this route",
+      "dismiss": "Not now",
+      "planAnyway": "Plan anyway",
+      "failed": "Couldn’t load stops. Retry or plan anyway.",
+      "empty": "Not enough places found for this mood."
+    },
+    "routelistFallback": {
+      "firstDay": {
+        "title": "New in town?",
+        "subtitle": "A fast loop of the iconic stops"
+      },
+      "slow": {
+        "title": "Take it slow",
+        "subtitle": "Coffee, a park, and a short walk"
+      },
+      "culture": {
+        "title": "Hear the story",
+        "subtitle": "Museums, monuments, old streets"
+      },
+      "food": {
+        "title": "Taste the city",
+        "subtitle": "Local shops, markets, street food"
+      }
+    }
   },
   "location": {
     "requiredTitle": "Location required",

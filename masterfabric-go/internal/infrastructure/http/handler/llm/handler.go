@@ -87,3 +87,19 @@ func (h *Handler) SuggestDayCards(w http.ResponseWriter, r *http.Request) {
 	h.auditLLM(r, "llm.suggest_day_cards")
 	response.JSON(w, http.StatusOK, resp)
 }
+
+// SuggestRouteCard handles POST /api/v1/llm/suggest-route-card.
+func (h *Handler) SuggestRouteCard(w http.ResponseWriter, r *http.Request) {
+	var req dto.SuggestRouteCardRequest
+	if err := validator.DecodeAndValidate(r, &req); err != nil {
+		response.JSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	resp, err := h.svc.SuggestRouteCard(r.Context(), req)
+	if err != nil {
+		response.Error(w, err)
+		return
+	}
+	h.auditLLM(r, "llm.suggest_route_card")
+	response.JSON(w, http.StatusOK, resp)
+}

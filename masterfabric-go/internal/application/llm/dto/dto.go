@@ -48,12 +48,40 @@ type SuggestDayCardsRequest struct {
 	TransportMode string   `json:"transport_mode"`
 }
 
-// DayCardSuggestion is one quick-start theme for the plan home screen.
+// DayCardSuggestion is one quick-start routelist card for the plan home screen.
 type DayCardSuggestion struct {
 	Title    string `json:"title"`
 	Subtitle string `json:"subtitle"`
 	Query    string `json:"query"`
 	Icon     string `json:"icon"`
+	Intent   string `json:"intent"`
+	Area     string `json:"area,omitempty"`
+}
+
+// RouteCardTurn is one compact chat turn sent with a route-card request.
+type RouteCardTurn struct {
+	Role   string `json:"role"`
+	Text   string `json:"text,omitempty"`
+	Area   string `json:"area,omitempty"`
+	Title  string `json:"title,omitempty"`
+	Query  string `json:"query,omitempty"`
+	Intent string `json:"intent,omitempty"`
+}
+
+// SuggestRouteCardRequest asks the LLM for a single routelist card from a chat prompt.
+type SuggestRouteCardRequest struct {
+	Prompt      string             `json:"prompt" validate:"required"`
+	Locale      string             `json:"locale"`
+	DefaultArea string             `json:"default_area"`
+	Previous    *DayCardSuggestion `json:"previous"`
+	Messages    []RouteCardTurn    `json:"messages"`
+}
+
+// SuggestRouteCardResponse is exactly one routelist card (no assistant prose).
+type SuggestRouteCardResponse struct {
+	Card  DayCardSuggestion `json:"card"`
+	Area  string            `json:"area"`
+	Model string            `json:"model,omitempty"`
 }
 
 // SuggestDayCardsResponse is a short list of location-realistic theme cards.

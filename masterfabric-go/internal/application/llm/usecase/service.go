@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/leventkok/NavGo/internal/application/llm/dto"
 	"github.com/leventkok/NavGo/internal/domain/llm"
@@ -215,6 +216,57 @@ var allowedDayCardIcons = map[string]struct{}{
 	"modern":     {},
 }
 
+var allowedDayCardIntents = map[string]struct{}{
+	"first_day": {},
+	"slow":      {},
+	"culture":   {},
+	"food":      {},
+	"shop":      {},
+	"photo":     {},
+	"family":    {},
+	"evening":   {},
+}
+
+func iconForIntent(intent string) string {
+	switch intent {
+	case "first_day":
+		return "modern"
+	case "slow":
+		return "coffee"
+	case "culture":
+		return "museum"
+	case "food", "shop":
+		return "bazaar"
+	case "photo":
+		return "viewpoints"
+	case "family":
+		return "parks"
+	case "evening":
+		return "modern"
+	default:
+		return "modern"
+	}
+}
+
+func intentForIcon(icon string) string {
+	switch icon {
+	case "historic", "museum":
+		return "culture"
+	case "coffee":
+		return "slow"
+	case "parks":
+		return "family"
+	case "bazaar":
+		return "food"
+	case "viewpoints":
+		return "photo"
+	case "waterfront":
+		return "slow"
+	default:
+		return "first_day"
+	}
+}
+
 // SuggestDayCards returns location-realistic day-plan theme cards via LLM.
 func (s *Service) SuggestDayCards(ctx context.Context, req dto.SuggestDayCardsRequest) (*dto.SuggestDayCardsResponse, error) {
 	if s.chat == nil {
@@ -246,25 +298,28 @@ func (s *Service) SuggestDayCards(ctx context.Context, req dto.SuggestDayCardsRe
 	}
 
 	content, err := s.chat.Chat(ctx, llm.ChatRequest{
-		Temperature: 0.4,
-		MaxTokens:   512,
+		Temperature: 0.5,
+		MaxTokens:   640,
 		Messages: []llm.Message{
 			{
 				Role: "system",
 				Content: "You are the NavGo travel assistant. Return ONLY valid JSON, no other text. " +
-					"Schema: {\"cards\":[{\"title\":\"string\",\"subtitle\":\"string\",\"query\":\"string\",\"icon\":\"string\"}]}. " +
-					"Exactly 4 cards. title and subtitle must be in the locale language (tr/en/ru). " +
-					"query is a short Places search phrase for that theme in the locale language. " +
+					"Schema: {\"cards\":[{\"title\":\"string\",\"subtitle\":\"string\",\"query\":\"string\",\"icon\":\"string\",\"intent\":\"string\"}]}. " +
+					"Exactly 4 cards. Write like Spotify playlist recommendations: mood-first title (question or hook) plus a short promise as subtitle. " +
+					"title and subtitle must be in the locale language (tr/en/ru). Do not use generic category labels like Historic center / Waterfront / Museum. " +
+					"intent must be one of: first_day, slow, culture, food, shop, photo, family, evening. Use four different intents. " +
+					"query is a short Places search phrase for that mood in the locale language (no invented place_id). " +
 					"icon must be one of: historic, waterfront, coffee, museum, parks, bazaar, viewpoints, modern. " +
 					"Cards MUST be realistic for the given location. " +
-					"NEVER suggest waterfront/harbor/coast/beach/marina themes for inland cities (e.g. Ankara, Konya, Nevşehir). " +
+					"NEVER suggest waterfront/harbor/coast/beach/marina themes for inland cities (e.g. Ankara, Konya, Nevşehir, Sivas). " +
 					"Only use icon=waterfront when the place actually has a meaningful coastline, harbor, lake shore promenade, or waterfront district. " +
-					"Prefer variety: history, culture, food/coffee, parks/nature, viewpoints, modern streets when fitting.",
+					"Prefer a mix: first-day highlights, slow/coffee, culture, food/shop, photo, family, or evening when they fit.",
 			},
 			{
 				Role: "user",
 				Content: fmt.Sprintf(
-					"Konum: %s\nPreferences:\n%s\nBu konumda bir günlük gezi için 4 öneri kartı öner. "+
+					"Konum: %s\nPreferences:\n%s\nBu konumda bir günlük gezi için 4 routelist kartı öner. "+
+						"Her kart bir niyet/playlist olsun (ör. şehre yeni misin, yerel tat, ağırdan al). "+
 						"Sahil/liman bu konumda yoksa waterfront kullanma ve liman/sahil kartı yazma.",
 					area,
 					prefs.String(),
@@ -287,6 +342,7 @@ func (s *Service) SuggestDayCards(ctx context.Context, req dto.SuggestDayCardsRe
 			Subtitle string `json:"subtitle"`
 			Query    string `json:"query"`
 			Icon     string `json:"icon"`
+			Intent   string `json:"intent"`
 		} `json:"cards"`
 	}
 	if err := json.Unmarshal(raw, &parsed); err != nil {
@@ -294,25 +350,39 @@ func (s *Service) SuggestDayCards(ctx context.Context, req dto.SuggestDayCardsRe
 	}
 
 	cards := make([]dto.DayCardSuggestion, 0, 4)
+	seenIntent := map[string]struct{}{}
 	for _, c := range parsed.Cards {
 		title := strings.TrimSpace(c.Title)
 		subtitle := strings.TrimSpace(c.Subtitle)
 		query := strings.TrimSpace(c.Query)
 		icon := strings.ToLower(strings.TrimSpace(c.Icon))
+		intent := strings.ToLower(strings.TrimSpace(c.Intent))
 		if title == "" || query == "" {
 			continue
 		}
+		if _, ok := allowedDayCardIntents[intent]; !ok {
+			if _, ok := allowedDayCardIcons[icon]; ok {
+				intent = intentForIcon(icon)
+			} else {
+				intent = "first_day"
+			}
+		}
+		if _, dup := seenIntent[intent]; dup {
+			continue
+		}
 		if _, ok := allowedDayCardIcons[icon]; !ok {
-			icon = "modern"
+			icon = iconForIntent(intent)
 		}
 		if subtitle == "" {
 			subtitle = query
 		}
+		seenIntent[intent] = struct{}{}
 		cards = append(cards, dto.DayCardSuggestion{
 			Title:    title,
 			Subtitle: subtitle,
 			Query:    query,
 			Icon:     icon,
+			Intent:   intent,
 		})
 		if len(cards) >= 4 {
 			break
@@ -323,6 +393,442 @@ func (s *Service) SuggestDayCards(ctx context.Context, req dto.SuggestDayCardsRe
 	}
 
 	return &dto.SuggestDayCardsResponse{Cards: cards, Model: s.model}, nil
+}
+
+// SuggestRouteCard returns exactly one routelist card for a chat prompt (or an edit of a previous card).
+func (s *Service) SuggestRouteCard(ctx context.Context, req dto.SuggestRouteCardRequest) (*dto.SuggestRouteCardResponse, error) {
+	if s.chat == nil {
+		return nil, domainErr.New(domainErr.ErrUnavailable, "LLM is not configured", nil)
+	}
+	prompt := strings.TrimSpace(req.Prompt)
+	if prompt == "" {
+		return nil, domainErr.New(domainErr.ErrValidation, "prompt is required", nil)
+	}
+
+	locale := strings.TrimSpace(req.Locale)
+	if locale == "" {
+		locale = "tr"
+	}
+	session := conversationArea(req)
+	named := cityFromPrompt(prompt)
+	cityChanged := named != "" && session != "" && !sameCity(named, session)
+	if named != "" {
+		session = named
+	}
+
+	var user strings.Builder
+	fmt.Fprintf(&user, "locale=%s\n", locale)
+	if session != "" {
+		fmt.Fprintf(&user, "session_area=%s\n", session)
+	} else if a := strings.TrimSpace(req.DefaultArea); a != "" {
+		fmt.Fprintf(&user, "default_area=%s\n", a)
+	}
+	if cityChanged {
+		fmt.Fprintf(&user, "user_changed_city=true\n")
+	}
+	if req.Previous != nil && !cityChanged {
+		fmt.Fprintf(&user, "previous_title=%s\n", strings.TrimSpace(req.Previous.Title))
+		fmt.Fprintf(&user, "previous_subtitle=%s\n", strings.TrimSpace(req.Previous.Subtitle))
+		fmt.Fprintf(&user, "previous_query=%s\n", strings.TrimSpace(req.Previous.Query))
+		fmt.Fprintf(&user, "previous_intent=%s\n", strings.TrimSpace(req.Previous.Intent))
+		fmt.Fprintf(&user, "previous_icon=%s\n", strings.TrimSpace(req.Previous.Icon))
+		if a := strings.TrimSpace(req.Previous.Area); a != "" {
+			fmt.Fprintf(&user, "previous_area=%s\n", a)
+		}
+		fmt.Fprintf(&user, "edit=%s\n", prompt)
+	} else {
+		fmt.Fprintf(&user, "prompt=%s\n", prompt)
+	}
+
+	messages := []llm.Message{{
+		Role: "system",
+		Content: "You are the NavGo travel assistant. Return ONLY one JSON object, no other text, no markdown. " +
+			"Schema: {\"title\":\"string\",\"subtitle\":\"string\",\"query\":\"string\",\"icon\":\"string\",\"intent\":\"string\",\"area\":\"string\"}. " +
+			"This is a single routelist card (Spotify-playlist mood): title is a hook, subtitle is a short promise, query is a Places search phrase. " +
+			"title and subtitle in the locale language. Do not write assistant chatter, stop lists, or extra keys. " +
+			"intent must be one of: first_day, slow, culture, food, shop, photo, family, evening. " +
+			"icon must be one of: historic, waterfront, coffee, museum, parks, bazaar, viewpoints, modern. " +
+			"session_area is the city locked for this chat. If session_area is set, ignore GPS/default_area and keep that city unless the user names a different city in this turn. " +
+			"If user_changed_city=true, ignore previous_* and emit a NEW card for session_area (new title, new query). " +
+			"area must match session_area when it is set and the user did not change city. " +
+			"NEVER suggest waterfront/harbor/coast/beach/marina for inland cities. " +
+			"If previous_* fields are present, revise that card using edit=; keep the same city unless the user changes it. " +
+			"Earlier user/assistant turns are the conversation — stay consistent with them.",
+	}}
+	for _, turn := range historyTurns(req.Messages, prompt) {
+		role, content := formatRouteCardTurn(turn)
+		if content == "" {
+			continue
+		}
+		messages = append(messages, llm.Message{Role: role, Content: content})
+	}
+	messages = append(messages, llm.Message{Role: "user", Content: user.String()})
+
+	llmCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 35*time.Second)
+	defer cancel()
+	content, err := s.chat.Chat(llmCtx, llm.ChatRequest{
+		Temperature: 0.4,
+		MaxTokens:   320,
+		Messages:    messages,
+	})
+	if err != nil {
+		fb := fallbackRouteCard(req)
+		return &fb, nil
+	}
+
+	raw, err := extractJSONObject(content)
+	if err != nil {
+		fb := fallbackRouteCard(req)
+		return &fb, nil
+	}
+
+	var parsed struct {
+		Title    string `json:"title"`
+		Subtitle string `json:"subtitle"`
+		Query    string `json:"query"`
+		Icon     string `json:"icon"`
+		Intent   string `json:"intent"`
+		Area     string `json:"area"`
+		Card     *struct {
+			Title    string `json:"title"`
+			Subtitle string `json:"subtitle"`
+			Query    string `json:"query"`
+			Icon     string `json:"icon"`
+			Intent   string `json:"intent"`
+			Area     string `json:"area"`
+		} `json:"card"`
+	}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		fb := fallbackRouteCard(req)
+		return &fb, nil
+	}
+	title, subtitle, query, icon, intent, area := parsed.Title, parsed.Subtitle, parsed.Query, parsed.Icon, parsed.Intent, parsed.Area
+	if parsed.Card != nil {
+		title, subtitle, query, icon, intent, area = parsed.Card.Title, parsed.Card.Subtitle, parsed.Card.Query, parsed.Card.Icon, parsed.Card.Intent, parsed.Card.Area
+	}
+
+	card, ok := normalizeDayCard(title, subtitle, query, icon, intent)
+	if !ok {
+		fb := fallbackRouteCard(req)
+		return &fb, nil
+	}
+
+	area = lockArea(session, strings.TrimSpace(area), prompt)
+	if named != "" {
+		area = named
+	}
+	if area == "" {
+		area = strings.TrimSpace(req.DefaultArea)
+	}
+	card.Area = area
+
+	return &dto.SuggestRouteCardResponse{Card: card, Area: area, Model: s.model}, nil
+}
+
+func conversationArea(req dto.SuggestRouteCardRequest) string {
+	if req.Previous != nil {
+		if a := strings.TrimSpace(req.Previous.Area); a != "" {
+			return a
+		}
+	}
+	for i := len(req.Messages) - 1; i >= 0; i-- {
+		if a := strings.TrimSpace(req.Messages[i].Area); a != "" {
+			return a
+		}
+	}
+	return ""
+}
+
+func lockArea(session, llmArea, prompt string) string {
+	if named := cityFromPrompt(prompt); named != "" {
+		return named
+	}
+	session = strings.TrimSpace(session)
+	llmArea = strings.TrimSpace(llmArea)
+	if session == "" {
+		return llmArea
+	}
+	if llmArea == "" || sameCity(llmArea, session) {
+		return session
+	}
+	if containsFold(prompt, llmArea) {
+		return llmArea
+	}
+	return session
+}
+
+func foldTR(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	s = strings.ReplaceAll(s, "\u0307", "")
+	replacer := strings.NewReplacer("ı", "i", "ş", "s", "ğ", "g", "ü", "u", "ö", "o", "ç", "c")
+	return replacer.Replace(s)
+}
+
+func sameCity(a, b string) bool {
+	a, b = foldTR(a), foldTR(b)
+	return a != "" && a == b
+}
+
+func containsFold(haystack, needle string) bool {
+	h := foldTR(haystack)
+	n := foldTR(needle)
+	if n == "" {
+		return false
+	}
+	return strings.Contains(h, n)
+}
+
+type cityName struct {
+	canonical string
+	aliases   []string
+}
+
+var knownCities = []cityName{
+	{canonical: "İstanbul", aliases: []string{"istanbul"}},
+	{canonical: "Ankara", aliases: []string{"ankara"}},
+	{canonical: "İzmir", aliases: []string{"izmir"}},
+	{canonical: "Antalya", aliases: []string{"antalya"}},
+	{canonical: "Bursa", aliases: []string{"bursa"}},
+	{canonical: "Sivas", aliases: []string{"sivas"}},
+	{canonical: "Muğla", aliases: []string{"mugla"}},
+	{canonical: "Bodrum", aliases: []string{"bodrum"}},
+	{canonical: "Fethiye", aliases: []string{"fethiye"}},
+	{canonical: "Marmaris", aliases: []string{"marmaris"}},
+	{canonical: "Alanya", aliases: []string{"alanya"}},
+	{canonical: "Kaş", aliases: []string{"kas"}},
+	{canonical: "Kapadokya", aliases: []string{"kapadokya", "cappadocia"}},
+	{canonical: "Nevşehir", aliases: []string{"nevsehir"}},
+	{canonical: "Trabzon", aliases: []string{"trabzon"}},
+	{canonical: "Gaziantep", aliases: []string{"gaziantep", "antep"}},
+	{canonical: "Konya", aliases: []string{"konya"}},
+	{canonical: "Adana", aliases: []string{"adana"}},
+	{canonical: "Mersin", aliases: []string{"mersin"}},
+	{canonical: "Eskişehir", aliases: []string{"eskisehir"}},
+	{canonical: "Çanakkale", aliases: []string{"canakkale"}},
+	{canonical: "Kadıköy", aliases: []string{"kadikoy"}},
+	{canonical: "Çeşme", aliases: []string{"cesme"}},
+}
+
+func cityFromPrompt(prompt string) string {
+	folded := foldTR(prompt)
+	if folded == "" {
+		return ""
+	}
+	bestIdx := -1
+	bestLen := 0
+	best := ""
+	for _, city := range knownCities {
+		for _, alias := range city.aliases {
+			idx := indexAlias(folded, alias)
+			if idx < 0 {
+				continue
+			}
+			if bestIdx < 0 || idx < bestIdx || (idx == bestIdx && len(alias) > bestLen) {
+				bestIdx = idx
+				bestLen = len(alias)
+				best = city.canonical
+			}
+		}
+	}
+	return best
+}
+
+func indexAlias(folded, alias string) int {
+	if alias == "" {
+		return -1
+	}
+	start := 0
+	for start <= len(folded)-len(alias) {
+		idx := strings.Index(folded[start:], alias)
+		if idx < 0 {
+			return -1
+		}
+		idx += start
+		if idx > 0 {
+			r := rune(folded[idx-1])
+			if r >= 'a' && r <= 'z' {
+				start = idx + 1
+				continue
+			}
+		}
+		return idx
+	}
+	return -1
+}
+
+const maxRouteCardTurns = 16
+
+func compactTurns(turns []dto.RouteCardTurn) []dto.RouteCardTurn {
+	if len(turns) <= maxRouteCardTurns {
+		return turns
+	}
+	firstUser := -1
+	for i, turn := range turns {
+		if strings.EqualFold(strings.TrimSpace(turn.Role), "user") && strings.TrimSpace(turn.Text) != "" {
+			firstUser = i
+			break
+		}
+	}
+	tailStart := len(turns) - (maxRouteCardTurns - 1)
+	if firstUser >= 0 && firstUser < tailStart {
+		out := make([]dto.RouteCardTurn, 0, maxRouteCardTurns)
+		out = append(out, turns[firstUser])
+		out = append(out, turns[tailStart:]...)
+		return out
+	}
+	return turns[len(turns)-maxRouteCardTurns:]
+}
+
+func historyTurns(turns []dto.RouteCardTurn, prompt string) []dto.RouteCardTurn {
+	turns = compactTurns(turns)
+	if n := len(turns); n > 0 {
+		last := turns[n-1]
+		if strings.EqualFold(strings.TrimSpace(last.Role), "user") && strings.TrimSpace(last.Text) == prompt {
+			return turns[:n-1]
+		}
+	}
+	return turns
+}
+
+func formatRouteCardTurn(turn dto.RouteCardTurn) (role, content string) {
+	role = strings.ToLower(strings.TrimSpace(turn.Role))
+	if role != "assistant" {
+		return "user", strings.TrimSpace(turn.Text)
+	}
+	var b strings.Builder
+	if a := strings.TrimSpace(turn.Area); a != "" {
+		fmt.Fprintf(&b, "area=%s", a)
+	}
+	if t := strings.TrimSpace(turn.Title); t != "" {
+		if b.Len() > 0 {
+			b.WriteString(" | ")
+		}
+		fmt.Fprintf(&b, "title=%s", t)
+	}
+	if i := strings.TrimSpace(turn.Intent); i != "" {
+		if b.Len() > 0 {
+			b.WriteString(" | ")
+		}
+		fmt.Fprintf(&b, "intent=%s", i)
+	}
+	if q := strings.TrimSpace(turn.Query); q != "" {
+		if b.Len() > 0 {
+			b.WriteString(" | ")
+		}
+		fmt.Fprintf(&b, "query=%s", q)
+	}
+	if b.Len() == 0 {
+		return "assistant", strings.TrimSpace(turn.Text)
+	}
+	return "assistant", b.String()
+}
+
+func fallbackRouteCard(req dto.SuggestRouteCardRequest) dto.SuggestRouteCardResponse {
+	prompt := strings.TrimSpace(req.Prompt)
+	named := cityFromPrompt(prompt)
+	area := named
+	if area == "" {
+		area = conversationArea(req)
+	}
+	if area == "" {
+		area = strings.TrimSpace(req.DefaultArea)
+	}
+	cityChanged := named != "" && req.Previous != nil && !sameCity(named, req.Previous.Area)
+	query := prompt
+	intent := "first_day"
+	previous := req.Previous
+	if cityChanged {
+		previous = nil
+	}
+	if previous != nil {
+		if q := strings.TrimSpace(previous.Query); q != "" {
+			query = strings.TrimSpace(q + " " + prompt)
+		}
+		if i := strings.TrimSpace(previous.Intent); i != "" {
+			intent = i
+		}
+	}
+	lower := foldTR(prompt + " " + query)
+	switch {
+	case strings.Contains(lower, "kahve"), strings.Contains(lower, "coffee"), strings.Contains(lower, "yavas"), strings.Contains(lower, "slow"):
+		intent = "slow"
+	case strings.Contains(lower, "muze"), strings.Contains(lower, "museum"), strings.Contains(lower, "kultur"), strings.Contains(lower, "tarih"):
+		intent = "culture"
+	case strings.Contains(lower, "yemek"), strings.Contains(lower, "food"), strings.Contains(lower, "lezzet"), strings.Contains(lower, "pazar"):
+		intent = "food"
+	case strings.Contains(lower, "aile"), strings.Contains(lower, "family"):
+		intent = "family"
+	case strings.Contains(lower, "aksam"), strings.Contains(lower, "evening"):
+		intent = "evening"
+	}
+	if query == "" {
+		query = area
+	}
+	if query == "" {
+		query = "gezilecek yerler"
+	}
+	runes := []rune(query)
+	if len(runes) > 80 {
+		query = string(runes[:80])
+	}
+	title, subtitle := fallbackCardCopy(req.Locale, prompt, previous)
+	card, _ := normalizeDayCard(title, subtitle, query, iconForIntent(intent), intent)
+	card.Area = area
+	return dto.SuggestRouteCardResponse{Card: card, Area: area, Model: "fallback"}
+}
+
+func fallbackCardCopy(locale, prompt string, previous *dto.DayCardSuggestion) (title, subtitle string) {
+	prompt = strings.TrimSpace(prompt)
+	runes := []rune(prompt)
+	if len(runes) > 72 {
+		prompt = string(runes[:72])
+	}
+	if previous != nil && strings.TrimSpace(previous.Title) != "" {
+		title = strings.TrimSpace(previous.Title)
+		if prompt != "" {
+			return title, prompt
+		}
+		return title, strings.TrimSpace(previous.Subtitle)
+	}
+	switch strings.ToLower(strings.TrimSpace(locale)) {
+	case "en":
+		return "Your kind of day", prompt
+	case "ru":
+		return "Твой день", prompt
+	default:
+		return "Anlattığın gün", prompt
+	}
+}
+
+func normalizeDayCard(title, subtitle, query, icon, intent string) (dto.DayCardSuggestion, bool) {
+	title = strings.TrimSpace(title)
+	subtitle = strings.TrimSpace(subtitle)
+	query = strings.TrimSpace(query)
+	icon = strings.ToLower(strings.TrimSpace(icon))
+	intent = strings.ToLower(strings.TrimSpace(intent))
+	if title == "" || query == "" {
+		return dto.DayCardSuggestion{}, false
+	}
+	if _, ok := allowedDayCardIntents[intent]; !ok {
+		if _, ok := allowedDayCardIcons[icon]; ok {
+			intent = intentForIcon(icon)
+		} else {
+			intent = "first_day"
+		}
+	}
+	if _, ok := allowedDayCardIcons[icon]; !ok {
+		icon = iconForIntent(intent)
+	}
+	if subtitle == "" {
+		subtitle = query
+	}
+	return dto.DayCardSuggestion{
+		Title:    title,
+		Subtitle: subtitle,
+		Query:    query,
+		Icon:     icon,
+		Intent:   intent,
+	}, true
 }
 
 func fallbackIndices(n, maxStops int) []int {

@@ -152,14 +152,14 @@ class Translations$plan$tr {
 	/// tr: 'Konum seç'
 	String get selectLocation => 'Konum seç';
 
-	/// tr: 'Hızlı başlangıç'
-	String get quickStart => 'Hızlı başlangıç';
+	/// tr: 'Senin için rotalar'
+	String get quickStart => 'Senin için rotalar';
 
-	/// tr: 'Konumunu seç, ardından bir rota tipi seç.'
-	String get quickStartNeedLocation => 'Konumunu seç, ardından bir rota tipi seç.';
+	/// tr: 'Konumunu seç, ardından bir rota önerisi aç.'
+	String get quickStartNeedLocation => 'Konumunu seç, ardından bir rota önerisi aç.';
 
-	/// tr: '{area} için bir rota tipi seç — ilgi alanlarına göre gerçek mekanlar.'
-	String quickStartWithArea({required Object area}) => '${area} için bir rota tipi seç — ilgi alanlarına göre gerçek mekanlar.';
+	/// tr: 'Bir ruh hali seç, durakları önizle, sonra günü kur.'
+	String get quickStartBody => 'Bir ruh hali seç, durakları önizle, sonra günü kur.';
 
 	/// tr: 'Gün planı'
 	String get defaultPlanTitle => 'Gün planı';
@@ -249,10 +249,14 @@ class Translations$plan$tr {
 	String get errorGeneric => 'Plan oluşturulamadı. Lütfen tekrar dene.';
 
 	late final Translations$plan$startSheet$tr startSheet = Translations$plan$startSheet$tr.internal(_root);
+	late final Translations$plan$chat$tr chat = Translations$plan$chat$tr.internal(_root);
 	late final Translations$plan$suggestion$tr suggestion = Translations$plan$suggestion$tr.internal(_root);
 
-	/// tr: 'Konuma göre öneriler hazırlanıyor…'
-	String get suggestionsLoading => 'Konuma göre öneriler hazırlanıyor…';
+	/// tr: 'Rotalar hazırlanıyor…'
+	String get suggestionsLoading => 'Rotalar hazırlanıyor…';
+
+	late final Translations$plan$preview$tr preview = Translations$plan$preview$tr.internal(_root);
+	late final Translations$plan$routelistFallback$tr routelistFallback = Translations$plan$routelistFallback$tr.internal(_root);
 }
 
 // Path: location
@@ -620,8 +624,58 @@ class Translations$plan$startSheet$tr {
 	/// tr: 'Konum alınıyor…'
 	String get resolvingLocation => 'Konum alınıyor…';
 
+	/// tr: 'Sohbette aç'
+	String get openInChat => 'Sohbette aç';
+
 	/// tr: 'Önce şehir veya ilçe yaz'
 	String get areaRequiredSnack => 'Önce şehir veya ilçe yaz';
+}
+
+// Path: plan.chat
+class Translations$plan$chat$tr {
+	Translations$plan$chat$tr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// tr: 'Konuşarak planla'
+	String get title => 'Konuşarak planla';
+
+	/// tr: 'Konum paylaşmadan anlat'
+	String get emptyTitle => 'Konum paylaşmadan anlat';
+
+	/// tr: 'Gitmek istediğin günü yaz — şehir, tempo, ne görmek istediğin. Konum izni gerekmez.'
+	String get emptyBody => 'Gitmek istediğin günü yaz — şehir, tempo, ne görmek istediğin. Konum izni gerekmez.';
+
+	/// tr: 'Bugün ne yapmak istiyorsun?'
+	String get inputHint => 'Bugün ne yapmak istiyorsun?';
+
+	/// tr: 'Bu rotayı nasıl değiştirelim?'
+	String get replyHint => 'Bu rotayı nasıl değiştirelim?';
+
+	/// tr: 'Cevap ver'
+	String get reply => 'Cevap ver';
+
+	/// tr: 'Diğer'
+	String get more => 'Diğer';
+
+	/// tr: 'Yanıtlanan rota'
+	String get quoting => 'Yanıtlanan rota';
+
+	/// tr: 'Önizlemek için dokun'
+	String get tapToPreview => 'Önizlemek için dokun';
+
+	/// tr: 'Rota önerilemedi. Tekrar dene.'
+	String get error => 'Rota önerilemedi. Tekrar dene.';
+
+	/// tr: 'Model isteği kabul etmedi (LLM anahtarı). Colab çıktısındaki anahtarı .env ile eşle.'
+	String get errorAuth => 'Model isteği kabul etmedi (LLM anahtarı). Colab çıktısındaki anahtarı .env ile eşle.';
+
+	/// tr: 'Tekrar dene'
+	String get retry => 'Tekrar dene';
+
+	late final Translations$plan$chat$thinking$tr thinking = Translations$plan$chat$thinking$tr.internal(_root);
 }
 
 // Path: plan.suggestion
@@ -636,6 +690,43 @@ class Translations$plan$suggestion$tr {
 	late final Translations$plan$suggestion$coffeeRoute$tr coffeeRoute = Translations$plan$suggestion$coffeeRoute$tr.internal(_root);
 	late final Translations$plan$suggestion$museumCulture$tr museumCulture = Translations$plan$suggestion$museumCulture$tr.internal(_root);
 	late final Translations$plan$suggestion$parksLakes$tr parksLakes = Translations$plan$suggestion$parksLakes$tr.internal(_root);
+}
+
+// Path: plan.preview
+class Translations$plan$preview$tr {
+	Translations$plan$preview$tr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// tr: 'Bu rotayı kur'
+	String get buildRoute => 'Bu rotayı kur';
+
+	/// tr: 'Vazgeç'
+	String get dismiss => 'Vazgeç';
+
+	/// tr: 'Yine de planla'
+	String get planAnyway => 'Yine de planla';
+
+	/// tr: 'Duraklar yüklenemedi. Tekrar deneyebilir veya yine de planlayabilirsin.'
+	String get failed => 'Duraklar yüklenemedi. Tekrar deneyebilir veya yine de planlayabilirsin.';
+
+	/// tr: 'Bu ruh hali için yeterince mekan bulunamadı.'
+	String get empty => 'Bu ruh hali için yeterince mekan bulunamadı.';
+}
+
+// Path: plan.routelistFallback
+class Translations$plan$routelistFallback$tr {
+	Translations$plan$routelistFallback$tr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+	late final Translations$plan$routelistFallback$firstDay$tr firstDay = Translations$plan$routelistFallback$firstDay$tr.internal(_root);
+	late final Translations$plan$routelistFallback$slow$tr slow = Translations$plan$routelistFallback$slow$tr.internal(_root);
+	late final Translations$plan$routelistFallback$culture$tr culture = Translations$plan$routelistFallback$culture$tr.internal(_root);
+	late final Translations$plan$routelistFallback$food$tr food = Translations$plan$routelistFallback$food$tr.internal(_root);
 }
 
 // Path: location.settingsRequired
@@ -696,6 +787,30 @@ class Translations$explore$destinations$tr {
 	late final Translations$explore$destinations$lisbon$tr lisbon = Translations$explore$destinations$lisbon$tr.internal(_root);
 	late final Translations$explore$destinations$tokyo$tr tokyo = Translations$explore$destinations$tokyo$tr.internal(_root);
 	late final Translations$explore$destinations$barcelona$tr barcelona = Translations$explore$destinations$barcelona$tr.internal(_root);
+}
+
+// Path: plan.chat.thinking
+class Translations$plan$chat$thinking$tr {
+	Translations$plan$chat$thinking$tr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// tr: 'Düşünüyor…'
+	String get s1 => 'Düşünüyor…';
+
+	/// tr: 'Ruh halini seçiyor…'
+	String get s2 => 'Ruh halini seçiyor…';
+
+	/// tr: 'Rotayı örüyor…'
+	String get s3 => 'Rotayı örüyor…';
+
+	/// tr: 'Durakları sadeleştiriyor…'
+	String get s4 => 'Durakları sadeleştiriyor…';
+
+	/// tr: 'Konuma göre ayarlıyor…'
+	String get s5 => 'Konuma göre ayarlıyor…';
 }
 
 // Path: plan.suggestion.historicCenter
@@ -771,6 +886,66 @@ class Translations$plan$suggestion$parksLakes$tr {
 
 	/// tr: 'Yeşil alan · yürüyüş · dinlenme'
 	String get subtitle => 'Yeşil alan · yürüyüş · dinlenme';
+}
+
+// Path: plan.routelistFallback.firstDay
+class Translations$plan$routelistFallback$firstDay$tr {
+	Translations$plan$routelistFallback$firstDay$tr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// tr: 'Şehre yeni misin?'
+	String get title => 'Şehre yeni misin?';
+
+	/// tr: 'İkonik duraklarla hızlı bir tur'
+	String get subtitle => 'İkonik duraklarla hızlı bir tur';
+}
+
+// Path: plan.routelistFallback.slow
+class Translations$plan$routelistFallback$slow$tr {
+	Translations$plan$routelistFallback$slow$tr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// tr: 'Ağırdan al'
+	String get title => 'Ağırdan al';
+
+	/// tr: 'Kahve, park ve kısa yürüyüş'
+	String get subtitle => 'Kahve, park ve kısa yürüyüş';
+}
+
+// Path: plan.routelistFallback.culture
+class Translations$plan$routelistFallback$culture$tr {
+	Translations$plan$routelistFallback$culture$tr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// tr: 'Hikâyeyi dinle'
+	String get title => 'Hikâyeyi dinle';
+
+	/// tr: 'Müze, anıt ve eski sokaklar'
+	String get subtitle => 'Müze, anıt ve eski sokaklar';
+}
+
+// Path: plan.routelistFallback.food
+class Translations$plan$routelistFallback$food$tr {
+	Translations$plan$routelistFallback$food$tr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// tr: 'Yerel tat'
+	String get title => 'Yerel tat';
+
+	/// tr: 'Esnaf, pazar ve sokak lezzeti'
+	String get subtitle => 'Esnaf, pazar ve sokak lezzeti';
 }
 
 // Path: explore.destinations.istanbul
@@ -931,9 +1106,9 @@ extension on Translations {
 			'onboarding.transport.driveSubtitle' => 'Araba ile bağlantı',
 			'onboarding.transport.bikeSubtitle' => 'Hafif tempo',
 			'plan.selectLocation' => 'Konum seç',
-			'plan.quickStart' => 'Hızlı başlangıç',
-			'plan.quickStartNeedLocation' => 'Konumunu seç, ardından bir rota tipi seç.',
-			'plan.quickStartWithArea' => ({required Object area}) => '${area} için bir rota tipi seç — ilgi alanlarına göre gerçek mekanlar.',
+			'plan.quickStart' => 'Senin için rotalar',
+			'plan.quickStartNeedLocation' => 'Konumunu seç, ardından bir rota önerisi aç.',
+			'plan.quickStartBody' => 'Bir ruh hali seç, durakları önizle, sonra günü kur.',
 			'plan.defaultPlanTitle' => 'Gün planı',
 			'plan.routeSummary' => ({required Object km, required Object mins, required Object provider}) => '${km} km · ~${mins} dk · ${provider}',
 			'plan.greetingMorning' => 'Günaydın',
@@ -969,7 +1144,25 @@ extension on Translations {
 			'plan.startSheet.destinationHint' => 'Örn. Kadıköy, İstanbul',
 			'plan.startSheet.useMyLocation' => 'Konumumu kullan',
 			'plan.startSheet.resolvingLocation' => 'Konum alınıyor…',
+			'plan.startSheet.openInChat' => 'Sohbette aç',
 			'plan.startSheet.areaRequiredSnack' => 'Önce şehir veya ilçe yaz',
+			'plan.chat.title' => 'Konuşarak planla',
+			'plan.chat.emptyTitle' => 'Konum paylaşmadan anlat',
+			'plan.chat.emptyBody' => 'Gitmek istediğin günü yaz — şehir, tempo, ne görmek istediğin. Konum izni gerekmez.',
+			'plan.chat.inputHint' => 'Bugün ne yapmak istiyorsun?',
+			'plan.chat.replyHint' => 'Bu rotayı nasıl değiştirelim?',
+			'plan.chat.reply' => 'Cevap ver',
+			'plan.chat.more' => 'Diğer',
+			'plan.chat.quoting' => 'Yanıtlanan rota',
+			'plan.chat.tapToPreview' => 'Önizlemek için dokun',
+			'plan.chat.error' => 'Rota önerilemedi. Tekrar dene.',
+			'plan.chat.errorAuth' => 'Model isteği kabul etmedi (LLM anahtarı). Colab çıktısındaki anahtarı .env ile eşle.',
+			'plan.chat.retry' => 'Tekrar dene',
+			'plan.chat.thinking.s1' => 'Düşünüyor…',
+			'plan.chat.thinking.s2' => 'Ruh halini seçiyor…',
+			'plan.chat.thinking.s3' => 'Rotayı örüyor…',
+			'plan.chat.thinking.s4' => 'Durakları sadeleştiriyor…',
+			'plan.chat.thinking.s5' => 'Konuma göre ayarlıyor…',
 			'plan.suggestion.historicCenter.title' => 'Tarihi merkez',
 			'plan.suggestion.historicCenter.subtitle' => 'Eski sokaklar · meydan · kahve',
 			'plan.suggestion.waterfront.title' => 'Sahil / liman',
@@ -980,7 +1173,20 @@ extension on Translations {
 			'plan.suggestion.museumCulture.subtitle' => 'Müze · galeri · anıt',
 			'plan.suggestion.parksLakes.title' => 'Park & göl',
 			'plan.suggestion.parksLakes.subtitle' => 'Yeşil alan · yürüyüş · dinlenme',
-			'plan.suggestionsLoading' => 'Konuma göre öneriler hazırlanıyor…',
+			'plan.suggestionsLoading' => 'Rotalar hazırlanıyor…',
+			'plan.preview.buildRoute' => 'Bu rotayı kur',
+			'plan.preview.dismiss' => 'Vazgeç',
+			'plan.preview.planAnyway' => 'Yine de planla',
+			'plan.preview.failed' => 'Duraklar yüklenemedi. Tekrar deneyebilir veya yine de planlayabilirsin.',
+			'plan.preview.empty' => 'Bu ruh hali için yeterince mekan bulunamadı.',
+			'plan.routelistFallback.firstDay.title' => 'Şehre yeni misin?',
+			'plan.routelistFallback.firstDay.subtitle' => 'İkonik duraklarla hızlı bir tur',
+			'plan.routelistFallback.slow.title' => 'Ağırdan al',
+			'plan.routelistFallback.slow.subtitle' => 'Kahve, park ve kısa yürüyüş',
+			'plan.routelistFallback.culture.title' => 'Hikâyeyi dinle',
+			'plan.routelistFallback.culture.subtitle' => 'Müze, anıt ve eski sokaklar',
+			'plan.routelistFallback.food.title' => 'Yerel tat',
+			'plan.routelistFallback.food.subtitle' => 'Esnaf, pazar ve sokak lezzeti',
 			'location.requiredTitle' => 'Konum gerekli',
 			'location.failedTitle' => 'Konum alınamadı',
 			'location.manualTitle' => 'Şehir veya ilçe',
