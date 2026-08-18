@@ -6,12 +6,26 @@ List<LatLng> decodeRoutePolyline(String encoded) {
   if (encoded.trim().isEmpty) return const [];
   try {
     final points = poly.decodePolyline(encoded, accuracyExponent: 5);
-    return points
-        .map((p) => LatLng(p[0].toDouble(), p[1].toDouble()))
-        .toList(growable: false);
+    return [
+      for (final p in points) LatLng(p[0].toDouble(), p[1].toDouble()),
+    ];
   } catch (_) {
     return const [];
   }
+}
+
+/// Collects a drawable path from overview, legs, then steps.
+List<LatLng> collectRoutePolylinePoints({
+  required String overviewPolyline,
+  required List<String> encodedFallbacks,
+}) {
+  final overview = decodeRoutePolyline(overviewPolyline);
+  if (overview.length >= 2) return overview;
+  for (final encoded in encodedFallbacks) {
+    final pts = decodeRoutePolyline(encoded);
+    if (pts.length >= 2) return pts;
+  }
+  return overview.length >= 2 ? overview : const [];
 }
 
 LatLngBounds? boundsForPoints(List<LatLng> points) {
@@ -47,9 +61,17 @@ List<LatLng> remainingPolylineAhead(List<LatLng> points, LatLng user) {
     }
   }
   if (bestIdx >= points.length - 1) {
-    return [points.last];
+    return points.sublist(points.length - 2);
   }
   return points.sublist(bestIdx);
+}
+
+List<LatLng> fallbackStraightPath(LatLng from, LatLng to) {
+  if ((from.latitude - to.latitude).abs() < 1e-7 &&
+      (from.longitude - to.longitude).abs() < 1e-7) {
+    return const [];
+  }
+  return [from, to];
 }
 
 double mathMin(double a, double b) => a < b ? a : b;
