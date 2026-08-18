@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -8,6 +7,8 @@ import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/models/place_model.dart';
 import 'package:navgo_mobile/core/models/route_models.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
+import 'package:navgo_mobile/core/utils/location_settings.dart';
+import 'package:navgo_mobile/core/utils/map_camera_utils.dart';
 import 'package:navgo_mobile/core/utils/polyline_utils.dart';
 import 'package:navgo_mobile/core/utils/route_order.dart';
 import 'package:navgo_mobile/data/location_service.dart';
@@ -145,16 +146,7 @@ class _RouteMapViewState extends State<RouteMapView> {
   void _startTracking() {
     _positionSub?.cancel();
     _positionSub = Geolocator.getPositionStream(
-      locationSettings: defaultTargetPlatform == TargetPlatform.android
-          ? AndroidSettings(
-              accuracy: LocationAccuracy.high,
-              forceLocationManager: true,
-              distanceFilter: 8,
-            )
-          : const LocationSettings(
-              accuracy: LocationAccuracy.high,
-              distanceFilter: 8,
-            ),
+      locationSettings: navGoLocationSettings(streaming: true),
     ).listen((pos) {
       _userLatLng = LatLng(pos.latitude, pos.longitude);
       _checkArrival(pos.latitude, pos.longitude);
@@ -200,13 +192,7 @@ class _RouteMapViewState extends State<RouteMapView> {
     if (user == null) return;
     if (_travelMode == 'TRANSIT') {
       if (followCamera && _controller != null) {
-        unawaited(
-          _controller!.animateCamera(
-            CameraUpdate.newCameraPosition(
-              CameraPosition(target: user, zoom: 16),
-            ),
-          ),
-        );
+        unawaited(followUserOnMap(_controller!, user));
       }
       return;
     }
@@ -224,13 +210,7 @@ class _RouteMapViewState extends State<RouteMapView> {
             };
     });
     if (followCamera && _controller != null) {
-      unawaited(
-        _controller!.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: user, zoom: 16),
-          ),
-        ),
-      );
+      unawaited(followUserOnMap(_controller!, user));
     }
   }
 
@@ -351,11 +331,8 @@ class _RouteMapViewState extends State<RouteMapView> {
     if (target != null) {
       points.add(LatLng(target.latitude, target.longitude));
     }
-    final bounds = boundsForPoints(points);
-    if (bounds != null && _controller != null) {
-      unawaited(
-        _controller!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 72)),
-      );
+    if (_controller != null) {
+      unawaited(fitMapToPoints(_controller!, points));
     }
   }
 
@@ -393,7 +370,9 @@ class _RouteMapViewState extends State<RouteMapView> {
               if (!_mapController.isCompleted) {
                 _mapController.complete(controller);
               }
-              _refreshMapOverlays();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _refreshMapOverlays();
+              });
             },
           ),
           SafeArea(

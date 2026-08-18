@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:navgo_mobile/core/utils/location_settings.dart';
 import 'package:navgo_mobile/i18n/strings.g.dart';
 
 enum LocationFailure {
@@ -168,17 +169,7 @@ class LocationService {
   }
 
   Future<Position?> _readPosition() async {
-    final LocationSettings settings =
-        defaultTargetPlatform == TargetPlatform.android
-            ? AndroidSettings(
-                accuracy: LocationAccuracy.high,
-                forceLocationManager: true,
-                timeLimit: const Duration(seconds: 15),
-              )
-            : const LocationSettings(
-                accuracy: LocationAccuracy.high,
-                timeLimit: Duration(seconds: 15),
-              );
+    final settings = navGoLocationSettings(streaming: false);
 
     // Prefer a fresh fix — lastKnown is often a stale emulator mock (wrong city).
     try {

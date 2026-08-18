@@ -1,0 +1,3 @@
+// Default empty — override via Maps.local.xcconfig (see tool/sync_maps_api_key.dart).
+MAPS_API_KEY=
+#include? "Maps.local.xcconfig"

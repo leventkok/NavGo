@@ -39,6 +39,9 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+# iOS Maps key (sync via tool/sync_maps_api_key.dart — same key as Android)
+/ios/Flutter/Maps.local.xcconfig
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
