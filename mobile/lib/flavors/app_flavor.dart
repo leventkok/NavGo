@@ -1,4 +1,8 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:masterfabric_core/masterfabric_core.dart'
     hide AppLocale, AppLocaleUtils, LocaleSettings, TranslationProvider;
 import 'package:navgo_mobile/app/app.dart';
@@ -26,6 +30,7 @@ AppFlavor currentAppFlavor = AppFlavor.dev;
 Future<void> startApp(AppFlavor flavor) async {
   WidgetsFlutterBinding.ensureInitialized();
   currentAppFlavor = flavor;
+  await _configureGoogleMaps();
 
   await MasterApp.runBefore(
     assetConfigPath: flavor.assetConfigPath,
@@ -48,6 +53,14 @@ Future<void> startApp(AppFlavor flavor) async {
       child: App(router: router, title: flavor.displayName),
     ),
   );
+}
+
+Future<void> _configureGoogleMaps() async {
+  if (!Platform.isAndroid) return;
+  final maps = GoogleMapsFlutterPlatform.instance;
+  if (maps is! GoogleMapsFlutterAndroid) return;
+  maps.useAndroidViewSurface = true;
+  await maps.initializeWithRenderer(AndroidMapRenderer.latest);
 }
 
 Future<void> _applyStoredLocale(SessionRepository session) async {

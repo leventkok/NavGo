@@ -378,13 +378,16 @@ mixin PlannerWidgets {
 
   Widget planActions({
     required BuildContext context,
+    required VoidCallback onOpenRoute,
     required VoidCallback onOpenMaps,
     required VoidCallback onReset,
   }) {
     final t = context.t;
     return Column(
       children: [
-        PrimaryButton(label: t.plan.openInGoogleMaps, onPressed: onOpenMaps),
+        PrimaryButton(label: t.routeMap.openRoute, onPressed: onOpenRoute),
+        const SizedBox(height: 12),
+        SecondaryButton(label: t.plan.openInGoogleMaps, onPressed: onOpenMaps),
         const SizedBox(height: 12),
         SecondaryButton(label: t.plan.backToHome, onPressed: onReset),
       ],

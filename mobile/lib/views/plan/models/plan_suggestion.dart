@@ -114,7 +114,7 @@ SuggestionStyle suggestionStyleFor(String iconKey) {
   };
 }
 
-/// Inland-safe intent cards — prefer LLM [suggestDayCards] when available.
+/// Generic mood cards for the "where to go" start sheet — prefer LLM on home.
 List<PlanSuggestion> fallbackSuggestionsFor(Translations t) {
   PlanSuggestion card({
     required String intent,

@@ -4,6 +4,8 @@ import 'package:navgo_mobile/views/explore/explore_view.dart';
 import 'package:navgo_mobile/views/onboarding/onboarding_view.dart';
 import 'package:navgo_mobile/views/plan/plan_view.dart';
 import 'package:navgo_mobile/views/profile/profile_view.dart';
+import 'package:navgo_mobile/views/route_map/route_map_args.dart';
+import 'package:navgo_mobile/views/route_map/route_map_view.dart';
 import 'package:navgo_mobile/views/splash/splash_view.dart';
 import 'package:navgo_mobile/views/trips/trips_view.dart';
 import 'package:navgo_mobile/widgets/navgo_shell.dart';
@@ -47,6 +49,15 @@ class NavGoRoutes {
                 GoRoute(
                   path: plan,
                   builder: (context, state) => PlanView(session: session),
+                  routes: [
+                    GoRoute(
+                      path: 'route-map',
+                      builder: (context, state) {
+                        final args = state.extra as RouteMapArgs;
+                        return RouteMapView(args: args);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),

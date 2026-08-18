@@ -42,6 +42,25 @@ type SearchResponse struct {
 	NextPageToken string `json:"nextPageToken,omitempty"`
 }
 
+// RouteStep is a single navigation segment inside a leg.
+type RouteStep struct {
+	TravelMode      string `json:"travelMode"`
+	Instructions    string `json:"instructions,omitempty"`
+	DistanceMeters  int64  `json:"distanceMeters,omitempty"`
+	DurationSeconds int64  `json:"durationSeconds,omitempty"`
+	TransitLine     string `json:"transitLine,omitempty"`
+	TransitVehicle  string `json:"transitVehicle,omitempty"`
+	DepartureStop   string `json:"departureStop,omitempty"`
+	ArrivalStop     string `json:"arrivalStop,omitempty"`
+	DepartureLat    float64 `json:"departureLat,omitempty"`
+	DepartureLng    float64 `json:"departureLng,omitempty"`
+	ArrivalLat      float64 `json:"arrivalLat,omitempty"`
+	ArrivalLng      float64 `json:"arrivalLng,omitempty"`
+	Headsign        string  `json:"headsign,omitempty"`
+	StopCount       int     `json:"stopCount,omitempty"`
+	EncodedPolyline string  `json:"encodedPolyline,omitempty"`
+}
+
 // RouteLeg mirrors a Directions/Routes API leg.
 type RouteLeg struct {
 	StartAddress           string `json:"startAddress"`
@@ -52,14 +71,17 @@ type RouteLeg struct {
 	StartLocation          LatLng `json:"startLocation"`
 	EndLocation            LatLng `json:"endLocation"`
 	EncodedPolyline        string `json:"encodedPolyline,omitempty"`
+	Steps                  []RouteStep `json:"steps,omitempty"`
 }
 
 // BuildRouteRequest asks for an optimized walking/driving day route.
 type BuildRouteRequest struct {
-	PlaceIDs           []string `json:"place_ids"`
-	TravelMode         string   `json:"travel_mode,omitempty"` // WALK|DRIVE|BICYCLE|TRANSIT
-	OptimizeWaypointOrder bool  `json:"optimize_waypoint_order"`
-	Language           string   `json:"language,omitempty"`
+	PlaceIDs              []string `json:"place_ids"`
+	TravelMode            string   `json:"travel_mode,omitempty"` // WALK|DRIVE|BICYCLE|TRANSIT
+	OptimizeWaypointOrder bool     `json:"optimize_waypoint_order"`
+	Language              string   `json:"language,omitempty"`
+	OriginLat             float64  `json:"origin_lat,omitempty"`
+	OriginLng             float64  `json:"origin_lng,omitempty"`
 }
 
 // BuildRouteResponse mirrors Directions/Routes fields used by clients.
@@ -72,6 +94,7 @@ type BuildRouteResponse struct {
 	GoogleMapsURL    string    `json:"googleMapsUrl"`
 	Status           string    `json:"status"`
 	Provider         string    `json:"provider"`
+	TransitAvailable bool      `json:"transitAvailable"`
 	QuotaWarning     string    `json:"quotaWarning,omitempty"`
 }
 

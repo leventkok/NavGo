@@ -43,6 +43,7 @@ class TranslationsRu extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$shell$ru shell = _Translations$shell$ru._(_root);
 	@override late final _Translations$onboarding$ru onboarding = _Translations$onboarding$ru._(_root);
 	@override late final _Translations$plan$ru plan = _Translations$plan$ru._(_root);
+	@override late final _Translations$routeMap$ru routeMap = _Translations$routeMap$ru._(_root);
 	@override late final _Translations$location$ru location = _Translations$location$ru._(_root);
 	@override late final _Translations$profile$ru profile = _Translations$profile$ru._(_root);
 	@override late final _Translations$explore$ru explore = _Translations$explore$ru._(_root);
@@ -150,6 +151,37 @@ class _Translations$plan$ru extends Translations$plan$tr {
 	@override String get suggestionsLoading => 'Подбираем маршруты…';
 	@override late final _Translations$plan$preview$ru preview = _Translations$plan$preview$ru._(_root);
 	@override late final _Translations$plan$routelistFallback$ru routelistFallback = _Translations$plan$routelistFallback$ru._(_root);
+}
+
+// Path: routeMap
+class _Translations$routeMap$ru extends Translations$routeMap$tr {
+	_Translations$routeMap$ru._(TranslationsRu root) : this._root = root, super.internal(root);
+
+	final TranslationsRu _root; // ignore: unused_field
+
+	// Translations
+	@override String get openRoute => 'Начать маршрут';
+	@override String get endRoute => 'Завершить';
+	@override String get youAreHere => 'Вы здесь';
+	@override String get currentStop => 'Следующая остановка';
+	@override String get currentDestination => 'Текущая цель';
+	@override String get completed => 'Завершено';
+	@override String get inProgress => 'В процессе';
+	@override String get notStarted => 'Не начато';
+	@override String stopsRemaining({required Object count, required Object status}) => 'Осталось ${count} · ${status}';
+	@override String arrived({required Object name}) => 'Вы прибыли: ${name}';
+	@override String get locationError => 'Не удалось получить местоположение. Карта маршрута не запускается.';
+	@override String get routeError => 'Не удалось построить маршрут. Попробуйте другой способ передвижения.';
+	@override String get transitHint => 'Общественный транспорт';
+	@override String get transitEmpty => 'На этом участке нет автобуса. Лучше идти пешком.';
+	@override String transitWalkTo({required Object stop}) => 'Пешком: ${stop}';
+	@override String transitRide({required Object line, required Object from, required Object to}) => '${line} · ${from} → ${to}';
+	@override String get transitWalkDest => 'Выйдите и идите к цели';
+	@override String get transitBoard => 'Остановка посадки';
+	@override String get modeWalk => 'Пешком';
+	@override String get modeTransit => 'Транспорт';
+	@override String get modeDrive => 'Авто';
+	@override String get modeBike => 'Велосипед';
 }
 
 // Path: location
@@ -816,6 +848,28 @@ extension on TranslationsRu {
 			'plan.routelistFallback.culture.subtitle' => 'Музеи, памятники, старые улицы',
 			'plan.routelistFallback.food.title' => 'Вкусы города',
 			'plan.routelistFallback.food.subtitle' => 'Рынок, локальная еда, уличные закуски',
+			'routeMap.openRoute' => 'Начать маршрут',
+			'routeMap.endRoute' => 'Завершить',
+			'routeMap.youAreHere' => 'Вы здесь',
+			'routeMap.currentStop' => 'Следующая остановка',
+			'routeMap.currentDestination' => 'Текущая цель',
+			'routeMap.completed' => 'Завершено',
+			'routeMap.inProgress' => 'В процессе',
+			'routeMap.notStarted' => 'Не начато',
+			'routeMap.stopsRemaining' => ({required Object count, required Object status}) => 'Осталось ${count} · ${status}',
+			'routeMap.arrived' => ({required Object name}) => 'Вы прибыли: ${name}',
+			'routeMap.locationError' => 'Не удалось получить местоположение. Карта маршрута не запускается.',
+			'routeMap.routeError' => 'Не удалось построить маршрут. Попробуйте другой способ передвижения.',
+			'routeMap.transitHint' => 'Общественный транспорт',
+			'routeMap.transitEmpty' => 'На этом участке нет автобуса. Лучше идти пешком.',
+			'routeMap.transitWalkTo' => ({required Object stop}) => 'Пешком: ${stop}',
+			'routeMap.transitRide' => ({required Object line, required Object from, required Object to}) => '${line} · ${from} → ${to}',
+			'routeMap.transitWalkDest' => 'Выйдите и идите к цели',
+			'routeMap.transitBoard' => 'Остановка посадки',
+			'routeMap.modeWalk' => 'Пешком',
+			'routeMap.modeTransit' => 'Транспорт',
+			'routeMap.modeDrive' => 'Авто',
+			'routeMap.modeBike' => 'Велосипед',
 			'location.requiredTitle' => 'Нужно местоположение',
 			'location.failedTitle' => 'Не удалось определить местоположение',
 			'location.manualTitle' => 'Город или район',

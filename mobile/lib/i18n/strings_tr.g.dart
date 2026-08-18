@@ -44,6 +44,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$shell$tr shell = Translations$shell$tr.internal(_root);
 	late final Translations$onboarding$tr onboarding = Translations$onboarding$tr.internal(_root);
 	late final Translations$plan$tr plan = Translations$plan$tr.internal(_root);
+	late final Translations$routeMap$tr routeMap = Translations$routeMap$tr.internal(_root);
 	late final Translations$location$tr location = Translations$location$tr.internal(_root);
 	late final Translations$profile$tr profile = Translations$profile$tr.internal(_root);
 	late final Translations$explore$tr explore = Translations$explore$tr.internal(_root);
@@ -257,6 +258,81 @@ class Translations$plan$tr {
 
 	late final Translations$plan$preview$tr preview = Translations$plan$preview$tr.internal(_root);
 	late final Translations$plan$routelistFallback$tr routelistFallback = Translations$plan$routelistFallback$tr.internal(_root);
+}
+
+// Path: routeMap
+class Translations$routeMap$tr {
+	Translations$routeMap$tr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// tr: 'Rotayı başlat'
+	String get openRoute => 'Rotayı başlat';
+
+	/// tr: 'Bitir'
+	String get endRoute => 'Bitir';
+
+	/// tr: 'Buradasın'
+	String get youAreHere => 'Buradasın';
+
+	/// tr: 'Sıradaki durak'
+	String get currentStop => 'Sıradaki durak';
+
+	/// tr: 'Güncel hedef'
+	String get currentDestination => 'Güncel hedef';
+
+	/// tr: 'Tamamlandı'
+	String get completed => 'Tamamlandı';
+
+	/// tr: 'Devam ediyor'
+	String get inProgress => 'Devam ediyor';
+
+	/// tr: 'Başlamadı'
+	String get notStarted => 'Başlamadı';
+
+	/// tr: '{count} durak kaldı · {status}'
+	String stopsRemaining({required Object count, required Object status}) => '${count} durak kaldı · ${status}';
+
+	/// tr: '{name} durağına vardın'
+	String arrived({required Object name}) => '${name} durağına vardın';
+
+	/// tr: 'Konum alınamadı. Harita rotası başlatılamıyor.'
+	String get locationError => 'Konum alınamadı. Harita rotası başlatılamıyor.';
+
+	/// tr: 'Rota çizilemedi. Ulaşım modunu değiştirmeyi dene.'
+	String get routeError => 'Rota çizilemedi. Ulaşım modunu değiştirmeyi dene.';
+
+	/// tr: 'Toplu taşıma'
+	String get transitHint => 'Toplu taşıma';
+
+	/// tr: 'Bu güzergahta otobüs veya hat yok. Yürüyüş daha uygun.'
+	String get transitEmpty => 'Bu güzergahta otobüs veya hat yok. Yürüyüş daha uygun.';
+
+	/// tr: 'Yürü: {stop}'
+	String transitWalkTo({required Object stop}) => 'Yürü: ${stop}';
+
+	/// tr: '{line} · {from} → {to}'
+	String transitRide({required Object line, required Object from, required Object to}) => '${line} · ${from} → ${to}';
+
+	/// tr: 'İn, hedefe yürü'
+	String get transitWalkDest => 'İn, hedefe yürü';
+
+	/// tr: 'Biniş durağı'
+	String get transitBoard => 'Biniş durağı';
+
+	/// tr: 'Yürüyüş'
+	String get modeWalk => 'Yürüyüş';
+
+	/// tr: 'Toplu taşıma'
+	String get modeTransit => 'Toplu taşıma';
+
+	/// tr: 'Araba'
+	String get modeDrive => 'Araba';
+
+	/// tr: 'Bisiklet'
+	String get modeBike => 'Bisiklet';
 }
 
 // Path: location
@@ -1207,6 +1283,28 @@ extension on Translations {
 			'plan.routelistFallback.culture.subtitle' => 'Müze, anıt ve eski sokaklar',
 			'plan.routelistFallback.food.title' => 'Yerel tat',
 			'plan.routelistFallback.food.subtitle' => 'Esnaf, pazar ve sokak lezzeti',
+			'routeMap.openRoute' => 'Rotayı başlat',
+			'routeMap.endRoute' => 'Bitir',
+			'routeMap.youAreHere' => 'Buradasın',
+			'routeMap.currentStop' => 'Sıradaki durak',
+			'routeMap.currentDestination' => 'Güncel hedef',
+			'routeMap.completed' => 'Tamamlandı',
+			'routeMap.inProgress' => 'Devam ediyor',
+			'routeMap.notStarted' => 'Başlamadı',
+			'routeMap.stopsRemaining' => ({required Object count, required Object status}) => '${count} durak kaldı · ${status}',
+			'routeMap.arrived' => ({required Object name}) => '${name} durağına vardın',
+			'routeMap.locationError' => 'Konum alınamadı. Harita rotası başlatılamıyor.',
+			'routeMap.routeError' => 'Rota çizilemedi. Ulaşım modunu değiştirmeyi dene.',
+			'routeMap.transitHint' => 'Toplu taşıma',
+			'routeMap.transitEmpty' => 'Bu güzergahta otobüs veya hat yok. Yürüyüş daha uygun.',
+			'routeMap.transitWalkTo' => ({required Object stop}) => 'Yürü: ${stop}',
+			'routeMap.transitRide' => ({required Object line, required Object from, required Object to}) => '${line} · ${from} → ${to}',
+			'routeMap.transitWalkDest' => 'İn, hedefe yürü',
+			'routeMap.transitBoard' => 'Biniş durağı',
+			'routeMap.modeWalk' => 'Yürüyüş',
+			'routeMap.modeTransit' => 'Toplu taşıma',
+			'routeMap.modeDrive' => 'Araba',
+			'routeMap.modeBike' => 'Bisiklet',
 			'location.requiredTitle' => 'Konum gerekli',
 			'location.failedTitle' => 'Konum alınamadı',
 			'location.manualTitle' => 'Şehir veya ilçe',

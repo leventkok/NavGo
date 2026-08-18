@@ -203,6 +203,30 @@
       }
     }
   },
+  "routeMap": {
+    "openRoute": "Rotayı başlat",
+    "endRoute": "Bitir",
+    "youAreHere": "Buradasın",
+    "currentStop": "Sıradaki durak",
+    "currentDestination": "Güncel hedef",
+    "completed": "Tamamlandı",
+    "inProgress": "Devam ediyor",
+    "notStarted": "Başlamadı",
+    "stopsRemaining": "{count} durak kaldı · {status}",
+    "arrived": "{name} durağına vardın",
+    "locationError": "Konum alınamadı. Harita rotası başlatılamıyor.",
+    "routeError": "Rota çizilemedi. Ulaşım modunu değiştirmeyi dene.",
+    "transitHint": "Toplu taşıma",
+    "transitEmpty": "Bu güzergahta otobüs veya hat yok. Yürüyüş daha uygun.",
+    "transitWalkTo": "Yürü: {stop}",
+    "transitRide": "{line} · {from} → {to}",
+    "transitWalkDest": "İn, hedefe yürü",
+    "transitBoard": "Biniş durağı",
+    "modeWalk": "Yürüyüş",
+    "modeTransit": "Toplu taşıma",
+    "modeDrive": "Araba",
+    "modeBike": "Bisiklet"
+  },
   "location": {
     "requiredTitle": "Konum gerekli",
     "failedTitle": "Konum alınamadı",

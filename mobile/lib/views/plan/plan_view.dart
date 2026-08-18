@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:navgo_mobile/app/routes.dart';
 import 'package:navgo_mobile/core/extensions/core_extensions.dart';
 import 'package:navgo_mobile/core/themes/app_colors.dart';
 import 'package:navgo_mobile/core/utils/maps_launcher.dart';
@@ -16,6 +18,7 @@ import 'package:navgo_mobile/views/plan/view_model/planner_view_model.dart';
 import 'package:navgo_mobile/views/plan/plan_chat_view.dart';
 import 'package:navgo_mobile/views/plan/widgets/planner_widgets.dart';
 import 'package:navgo_mobile/views/plan/widgets/route_preview_sheet.dart';
+import 'package:navgo_mobile/views/route_map/route_map_args.dart';
 
 class PlanView extends StatelessWidget {
   const PlanView({super.key, required this.session});
@@ -47,18 +50,34 @@ class _PlanViewContentState extends State<_PlanViewContent>
   final _plannerService = PlannerService();
   var _resolvingLocation = false;
   var _loadingSuggestions = false;
-  List<PlanSuggestion> _suggestions = const [];
+  List<PlanSuggestion> _homeSuggestions = const [];
   String _suggestionsForArea = '';
 
   @override
   void initState() {
     super.initState();
-    _suggestions = fallbackSuggestionsFor(t);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_refreshLocationOnOpen());
+    });
+  }
+
+  Future<void> _refreshLocationOnOpen() async {
+    final outcome = await _location.resolveAreaDetailed();
+    if (!mounted) return;
+    if (outcome.result != null &&
+        outcome.result!.fromGps &&
+        outcome.result!.area.trim().isNotEmpty) {
+      final gpsArea = outcome.result!.area.trim();
+      if (gpsArea.toLowerCase() != widget.session.defaultArea.trim().toLowerCase()) {
+        await widget.session.setDefaultArea(gpsArea);
+        if (mounted) setState(() {});
+      }
+      await _loadSuggestions(gpsArea);
+      return;
+    }
     final area = widget.session.defaultArea.trim();
     if (area.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        unawaited(_loadSuggestions(area));
-      });
+      await _loadSuggestions(area);
     }
   }
 
@@ -86,15 +105,13 @@ class _PlanViewContentState extends State<_PlanViewContent>
       );
       if (!mounted) return;
       setState(() {
-        _suggestions = (cards != null && cards.length >= 2)
-            ? cards
-            : fallbackSuggestionsFor(t);
+        _homeSuggestions = cards ?? const [];
         _loadingSuggestions = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _suggestions = fallbackSuggestionsFor(t);
+        _homeSuggestions = const [];
         _loadingSuggestions = false;
       });
     }
@@ -137,9 +154,7 @@ class _PlanViewContentState extends State<_PlanViewContent>
         ? t.common.defaultTravelerName
         : widget.session.displayName;
     final areaLabel = _area.isEmpty ? null : _area;
-    final suggestions = _suggestions.isEmpty
-        ? fallbackSuggestionsFor(t)
-        : _suggestions;
+    final suggestions = _homeSuggestions;
 
     return ListView(
       padding: context.paddingNormal,
@@ -320,9 +335,6 @@ class _PlanViewContentState extends State<_PlanViewContent>
         initialArea: _area,
         location: _location,
         plannerService: _plannerService,
-        suggestions: _suggestions.isEmpty
-            ? fallbackSuggestionsFor(t)
-            : _suggestions,
         onAreaResolved: (area) async {
           await widget.session.setDefaultArea(area);
           await _loadSuggestions(area);
@@ -388,6 +400,17 @@ class _PlanViewContentState extends State<_PlanViewContent>
           context.sizedHeightBoxNormal,
           planActions(
             context: context,
+            onOpenRoute: () {
+              context.push(
+                '${NavGoRoutes.plan}/route-map',
+                extra: RouteMapArgs(
+                  title: title,
+                  stops: state.stops,
+                  travelMode: widget.session.apiTravelMode,
+                  route: route,
+                ),
+              );
+            },
             onOpenMaps: () => openMapsUrl(route.googleMapsUrl),
             onReset: () =>
                 context.read<PlannerViewModel>().add(PlannerResetEvent()),
@@ -415,14 +438,12 @@ class _PlanStartSheet extends StatefulWidget {
     required this.initialArea,
     required this.location,
     required this.plannerService,
-    required this.suggestions,
     required this.onAreaResolved,
   });
 
   final String initialArea;
   final LocationService location;
   final PlannerService plannerService;
-  final List<PlanSuggestion> suggestions;
   final Future<void> Function(String area) onAreaResolved;
 
   @override
@@ -485,9 +506,7 @@ class _PlanStartSheetState extends State<_PlanStartSheet> {
   @override
   Widget build(BuildContext context) {
     final t = context.t;
-    final suggestions = widget.suggestions.isEmpty
-        ? fallbackSuggestionsFor(t)
-        : widget.suggestions;
+    final suggestions = fallbackSuggestionsFor(t);
     return Padding(
       padding: EdgeInsets.only(
         left: 20,

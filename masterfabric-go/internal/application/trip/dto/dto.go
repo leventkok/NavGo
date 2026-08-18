@@ -17,10 +17,12 @@ type SearchPlacesRequest struct {
 }
 
 type BuildRouteRequest struct {
-	PlaceIDs              []string `json:"place_ids" validate:"required,min=2"`
+	PlaceIDs              []string `json:"place_ids" validate:"required,min=1"`
 	TravelMode            string   `json:"travel_mode"`
 	OptimizeWaypointOrder bool     `json:"optimize_waypoint_order"`
 	Language              string   `json:"language"`
+	OriginLat             float64  `json:"origin_lat"`
+	OriginLng             float64  `json:"origin_lng"`
 }
 
 type StopInput struct {

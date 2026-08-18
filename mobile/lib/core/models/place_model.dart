@@ -27,26 +27,3 @@ class PlaceModel {
     );
   }
 }
-
-class RouteModel {
-  const RouteModel({
-    required this.googleMapsUrl,
-    required this.distanceMeters,
-    required this.durationSeconds,
-    required this.provider,
-  });
-
-  final String googleMapsUrl;
-  final int distanceMeters;
-  final int durationSeconds;
-  final String provider;
-
-  factory RouteModel.fromJson(Map<String, dynamic> json) {
-    return RouteModel(
-      googleMapsUrl: (json['googleMapsUrl'] ?? '') as String,
-      distanceMeters: (json['distanceMeters'] as num?)?.toInt() ?? 0,
-      durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 0,
-      provider: (json['provider'] ?? '') as String,
-    );
-  }
-}

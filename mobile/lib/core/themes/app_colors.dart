@@ -14,4 +14,5 @@ class AppColors {
   static const Color surfaceMuted = Color(0xFFE8EAED);
   static const Color onPrimary = Color(0xFFFFFFFF);
   static const Color danger = Color(0xFFEB5757);
+  static const Color success = Color(0xFF27AE60);
 }

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:navgo_mobile/core/constants/api_constants.dart';
 import 'package:navgo_mobile/core/models/place_model.dart';
+import 'package:navgo_mobile/core/models/route_models.dart';
 import 'package:navgo_mobile/data/auth_token_store.dart';
 import 'package:navgo_mobile/flavors/app_flavor.dart';
 import 'package:navgo_mobile/views/plan/models/plan_suggestion.dart';
@@ -229,7 +230,7 @@ class PlannerService {
         if (card.title.isEmpty || card.query.isEmpty) continue;
         cards.add(card);
       }
-      if (cards.length < 2) return null;
+      if (cards.isEmpty) return null;
       return cards.take(4).toList();
     } on DioException {
       return null;
@@ -300,15 +301,23 @@ class PlannerService {
     required String area,
     required String query,
     int maxResults = 5,
+    double? lat,
+    double? lng,
   }) async {
+    final data = <String, dynamic>{
+      'query': query.isEmpty ? area : query,
+      'area': area,
+      'language': 'tr',
+      'max_results': maxResults,
+    };
+    if (lat != null && lng != null) {
+      data['lat'] = lat;
+      data['lng'] = lng;
+      data['radius_m'] = 2500;
+    }
     final res = await _dio.post(
       '/api/v1/places/search',
-      data: {
-        'query': query.isEmpty ? area : query,
-        'area': area,
-        'language': 'tr',
-        'max_results': maxResults,
-      },
+      data: data,
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
     final list = (res.data['places'] as List<dynamic>? ?? [])
@@ -322,15 +331,23 @@ class PlannerService {
     required String token,
     required List<String> placeIds,
     String travelMode = 'WALK',
+    double? originLat,
+    double? originLng,
+    bool optimizeWaypointOrder = false,
   }) async {
+    final data = <String, dynamic>{
+      'place_ids': placeIds,
+      'travel_mode': travelMode,
+      'optimize_waypoint_order': optimizeWaypointOrder,
+      'language': 'tr',
+    };
+    if (originLat != null && originLng != null) {
+      data['origin_lat'] = originLat;
+      data['origin_lng'] = originLng;
+    }
     final res = await _dio.post(
       '/api/v1/routes/build',
-      data: {
-        'place_ids': placeIds,
-        'travel_mode': travelMode,
-        'optimize_waypoint_order': true,
-        'language': 'tr',
-      },
+      data: data,
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
     return RouteModel.fromJson(res.data as Map<String, dynamic>);

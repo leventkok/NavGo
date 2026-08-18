@@ -156,7 +156,8 @@ func (s *Service) PickStops(ctx context.Context, req dto.PickStopsRequest) (*dto
 		Messages: []llm.Message{
 			{
 				Role: "system",
-				Content: "From the numbered place list, pick stop indices for a day plan. The user prompt may be in any language; use it only to choose relevant places. " +
+				Content: "From the numbered place list, pick stop indices for a compact walking day plan. Prefer places that are close to each other, not spread across the city. " +
+					"The user prompt may be in any language; use it only to choose relevant places. " +
 					"Return ONLY JSON: {\"indices\":[number,...]}. Do not use numbers absent from the list. Do not invent place_id.",
 			},
 			{
@@ -310,7 +311,8 @@ func (s *Service) SuggestDayCards(ctx context.Context, req dto.SuggestDayCardsRe
 					"intent must be one of: first_day, slow, culture, food, shop, photo, family, evening. Use four different intents. " +
 					"query is a short Places search phrase for that mood in the locale language (no invented place_id). " +
 					"icon must be one of: historic, waterfront, coffee, museum, parks, bazaar, viewpoints, modern. " +
-					"Cards MUST be realistic for the given location. " +
+					"Cards MUST be realistic for the given location ONLY. " +
+					"NEVER mention other cities or regions in title or subtitle (e.g. do not write Mardin, Istanbul, Ortaköy, Kızkalesi when area is Antalya). " +
 					"NEVER suggest waterfront/harbor/coast/beach/marina themes for inland cities (e.g. Ankara, Konya, Nevşehir, Sivas). " +
 					"Only use icon=waterfront when the place actually has a meaningful coastline, harbor, lake shore promenade, or waterfront district. " +
 					"Prefer a mix: first-day highlights, slow/coffee, culture, food/shop, photo, family, or evening when they fit.",
@@ -360,6 +362,9 @@ func (s *Service) SuggestDayCards(ctx context.Context, req dto.SuggestDayCardsRe
 		if title == "" || query == "" {
 			continue
 		}
+		if cardConflictsWithArea(title, subtitle, query, area) {
+			continue
+		}
 		if _, ok := allowedDayCardIntents[intent]; !ok {
 			if _, ok := allowedDayCardIcons[icon]; ok {
 				intent = intentForIcon(icon)
@@ -383,12 +388,13 @@ func (s *Service) SuggestDayCards(ctx context.Context, req dto.SuggestDayCardsRe
 			Query:    query,
 			Icon:     icon,
 			Intent:   intent,
+			Area:     area,
 		})
 		if len(cards) >= 4 {
 			break
 		}
 	}
-	if len(cards) < 2 {
+	if len(cards) == 0 {
 		return nil, domainErr.New(domainErr.ErrInternal, "LLM returned too few day cards", nil)
 	}
 
@@ -584,12 +590,13 @@ type cityName struct {
 }
 
 var knownCities = []cityName{
-	{canonical: "İstanbul", aliases: []string{"istanbul"}},
+	{canonical: "İstanbul", aliases: []string{"istanbul", "ortakoy", "besiktas", "uskudar"}},
 	{canonical: "Ankara", aliases: []string{"ankara"}},
 	{canonical: "İzmir", aliases: []string{"izmir"}},
-	{canonical: "Antalya", aliases: []string{"antalya"}},
+	{canonical: "Antalya", aliases: []string{"antalya", "muratpasa", "kaleici", "konyaalti", "lara"}},
 	{canonical: "Bursa", aliases: []string{"bursa"}},
 	{canonical: "Sivas", aliases: []string{"sivas"}},
+	{canonical: "Mardin", aliases: []string{"mardin"}},
 	{canonical: "Muğla", aliases: []string{"mugla"}},
 	{canonical: "Bodrum", aliases: []string{"bodrum"}},
 	{canonical: "Fethiye", aliases: []string{"fethiye"}},
@@ -602,7 +609,7 @@ var knownCities = []cityName{
 	{canonical: "Gaziantep", aliases: []string{"gaziantep", "antep"}},
 	{canonical: "Konya", aliases: []string{"konya"}},
 	{canonical: "Adana", aliases: []string{"adana"}},
-	{canonical: "Mersin", aliases: []string{"mersin"}},
+	{canonical: "Mersin", aliases: []string{"mersin", "kizkalesi"}},
 	{canonical: "Eskişehir", aliases: []string{"eskisehir"}},
 	{canonical: "Çanakkale", aliases: []string{"canakkale"}},
 	{canonical: "Kadıköy", aliases: []string{"kadikoy"}},
@@ -631,6 +638,54 @@ func cityFromPrompt(prompt string) string {
 		}
 	}
 	return best
+}
+
+func sessionCity(area string) string {
+	if c := cityFromPrompt(area); c != "" {
+		return c
+	}
+	return strings.TrimSpace(area)
+}
+
+func cardConflictsWithArea(title, subtitle, query, area string) bool {
+	session := sessionCity(area)
+	if session == "" {
+		return false
+	}
+	blob := title + " " + subtitle + " " + query
+	for _, mentioned := range citiesInText(blob) {
+		if sameCity(mentioned, session) {
+			continue
+		}
+		if containsFold(area, mentioned) {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func citiesInText(text string) []string {
+	folded := foldTR(text)
+	if folded == "" {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	var out []string
+	for _, city := range knownCities {
+		for _, alias := range city.aliases {
+			if indexAlias(folded, alias) < 0 {
+				continue
+			}
+			if _, ok := seen[city.canonical]; ok {
+				break
+			}
+			seen[city.canonical] = struct{}{}
+			out = append(out, city.canonical)
+			break
+		}
+	}
+	return out
 }
 
 func indexAlias(folded, alias string) int {

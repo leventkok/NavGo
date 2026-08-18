@@ -71,6 +71,42 @@ func TestSuggestDayCards_JSON(t *testing.T) {
 	if got.Cards[0].Intent != "first_day" || got.Cards[0].Title == "" {
 		t.Fatalf("unexpected first card: %+v", got.Cards[0])
 	}
+	if got.Cards[0].Area != "Ankara" {
+		t.Fatalf("want area on card, got %q", got.Cards[0].Area)
+	}
+}
+
+func TestSuggestDayCards_FiltersForeignCities(t *testing.T) {
+	svc := usecase.NewService(stubChat{
+		content: `{"cards":[
+			{"title":"Kaleiçi'nde tarih gezisi","subtitle":"Mardin'de bir gün","query":"tarihi yer","icon":"historic","intent":"first_day"},
+			{"title":"Kızkalesi ve çevresi","subtitle":"Kıyı turu","query":"kale sahil","icon":"viewpoints","intent":"photo"},
+			{"title":"Ortaköy'de sakin akşam","subtitle":"Boğaz manzarası","query":"ortakoy","icon":"coffee","intent":"evening"},
+			{"title":"Antalya lezzet turu","subtitle":"Yerel tatlar","query":"antalya yemek","icon":"bazaar","intent":"food"}
+		]}`,
+	}, "navgo-gemma")
+
+	got, err := svc.SuggestDayCards(context.Background(), dto.SuggestDayCardsRequest{
+		Area:   "Muratpaşa, Antalya",
+		Locale: "tr",
+	})
+	if err != nil {
+		t.Fatalf("SuggestDayCards: %v", err)
+	}
+	if len(got.Cards) != 1 {
+		t.Fatalf("want 1 card after foreign-city filter, got %d", len(got.Cards))
+	}
+	if got.Cards[0].Intent != "food" {
+		t.Fatalf("unexpected surviving card: %+v", got.Cards[0])
+	}
+	for _, c := range got.Cards {
+		blob := c.Title + " " + c.Subtitle
+		if strings.Contains(strings.ToLower(blob), "mardin") ||
+			strings.Contains(strings.ToLower(blob), "ortaköy") ||
+			strings.Contains(strings.ToLower(blob), "kızkalesi") {
+			t.Fatalf("foreign city leaked into card: %+v", c)
+		}
+	}
 }
 
 func TestSuggestRouteCard_JSON(t *testing.T) {

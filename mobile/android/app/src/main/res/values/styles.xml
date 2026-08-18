@@ -15,4 +15,8 @@
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+
+    <!-- Override flutter_inappwebview AppCompat themes to avoid resource merge conflicts -->
+    <style name="AppTheme" parent="@android:style/Theme.Light.NoTitleBar" />
+    <style name="InAppWebViewTheme" parent="@android:style/Theme.Light.NoTitleBar" />
 </resources>

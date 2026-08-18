@@ -49,8 +49,13 @@ func (s *Service) SearchPlaces(ctx context.Context, req dto.SearchPlacesRequest)
 }
 
 func (s *Service) BuildRoute(ctx context.Context, req dto.BuildRouteRequest) (*places.BuildRouteResponse, error) {
-	if len(req.PlaceIDs) < 2 {
-		return nil, domainErr.New(domainErr.ErrValidation, "at least 2 place_ids required", nil)
+	hasOrigin := req.OriginLat != 0 || req.OriginLng != 0
+	minPlaces := 2
+	if hasOrigin {
+		minPlaces = 1
+	}
+	if len(req.PlaceIDs) < minPlaces {
+		return nil, domainErr.New(domainErr.ErrValidation, "not enough place_ids for route", nil)
 	}
 	resolved, err := s.resolvePlaceIDs(ctx, req.PlaceIDs)
 	if err != nil {
@@ -61,6 +66,8 @@ func (s *Service) BuildRoute(ctx context.Context, req dto.BuildRouteRequest) (*p
 		TravelMode:            req.TravelMode,
 		OptimizeWaypointOrder: req.OptimizeWaypointOrder,
 		Language:              req.Language,
+		OriginLat:             req.OriginLat,
+		OriginLng:             req.OriginLng,
 	}, resolved)
 }
 

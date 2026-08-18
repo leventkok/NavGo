@@ -43,6 +43,7 @@ class TranslationsEn extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$shell$en shell = _Translations$shell$en._(_root);
 	@override late final _Translations$onboarding$en onboarding = _Translations$onboarding$en._(_root);
 	@override late final _Translations$plan$en plan = _Translations$plan$en._(_root);
+	@override late final _Translations$routeMap$en routeMap = _Translations$routeMap$en._(_root);
 	@override late final _Translations$location$en location = _Translations$location$en._(_root);
 	@override late final _Translations$profile$en profile = _Translations$profile$en._(_root);
 	@override late final _Translations$explore$en explore = _Translations$explore$en._(_root);
@@ -150,6 +151,37 @@ class _Translations$plan$en extends Translations$plan$tr {
 	@override String get suggestionsLoading => 'Preparing routes…';
 	@override late final _Translations$plan$preview$en preview = _Translations$plan$preview$en._(_root);
 	@override late final _Translations$plan$routelistFallback$en routelistFallback = _Translations$plan$routelistFallback$en._(_root);
+}
+
+// Path: routeMap
+class _Translations$routeMap$en extends Translations$routeMap$tr {
+	_Translations$routeMap$en._(TranslationsEn root) : this._root = root, super.internal(root);
+
+	final TranslationsEn _root; // ignore: unused_field
+
+	// Translations
+	@override String get openRoute => 'Start route';
+	@override String get endRoute => 'End';
+	@override String get youAreHere => 'You are here';
+	@override String get currentStop => 'Next stop';
+	@override String get currentDestination => 'Current destination';
+	@override String get completed => 'Completed';
+	@override String get inProgress => 'In progress';
+	@override String get notStarted => 'Not started';
+	@override String stopsRemaining({required Object count, required Object status}) => '${count} stops left · ${status}';
+	@override String arrived({required Object name}) => 'You arrived at ${name}';
+	@override String get locationError => 'Couldn’t get location. Route map can’t start.';
+	@override String get routeError => 'Couldn’t draw the route. Try another travel mode.';
+	@override String get transitHint => 'Public transit';
+	@override String get transitEmpty => 'No bus or transit line for this stretch. Walking is better.';
+	@override String transitWalkTo({required Object stop}) => 'Walk to ${stop}';
+	@override String transitRide({required Object line, required Object from, required Object to}) => '${line} · ${from} → ${to}';
+	@override String get transitWalkDest => 'Get off, walk to destination';
+	@override String get transitBoard => 'Boarding stop';
+	@override String get modeWalk => 'Walk';
+	@override String get modeTransit => 'Transit';
+	@override String get modeDrive => 'Drive';
+	@override String get modeBike => 'Bike';
 }
 
 // Path: location
@@ -816,6 +848,28 @@ extension on TranslationsEn {
 			'plan.routelistFallback.culture.subtitle' => 'Museums, monuments, old streets',
 			'plan.routelistFallback.food.title' => 'Taste the city',
 			'plan.routelistFallback.food.subtitle' => 'Local shops, markets, street food',
+			'routeMap.openRoute' => 'Start route',
+			'routeMap.endRoute' => 'End',
+			'routeMap.youAreHere' => 'You are here',
+			'routeMap.currentStop' => 'Next stop',
+			'routeMap.currentDestination' => 'Current destination',
+			'routeMap.completed' => 'Completed',
+			'routeMap.inProgress' => 'In progress',
+			'routeMap.notStarted' => 'Not started',
+			'routeMap.stopsRemaining' => ({required Object count, required Object status}) => '${count} stops left · ${status}',
+			'routeMap.arrived' => ({required Object name}) => 'You arrived at ${name}',
+			'routeMap.locationError' => 'Couldn’t get location. Route map can’t start.',
+			'routeMap.routeError' => 'Couldn’t draw the route. Try another travel mode.',
+			'routeMap.transitHint' => 'Public transit',
+			'routeMap.transitEmpty' => 'No bus or transit line for this stretch. Walking is better.',
+			'routeMap.transitWalkTo' => ({required Object stop}) => 'Walk to ${stop}',
+			'routeMap.transitRide' => ({required Object line, required Object from, required Object to}) => '${line} · ${from} → ${to}',
+			'routeMap.transitWalkDest' => 'Get off, walk to destination',
+			'routeMap.transitBoard' => 'Boarding stop',
+			'routeMap.modeWalk' => 'Walk',
+			'routeMap.modeTransit' => 'Transit',
+			'routeMap.modeDrive' => 'Drive',
+			'routeMap.modeBike' => 'Bike',
 			'location.requiredTitle' => 'Location required',
 			'location.failedTitle' => 'Couldn’t get location',
 			'location.manualTitle' => 'City or district',

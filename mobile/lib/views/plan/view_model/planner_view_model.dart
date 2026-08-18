@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:navgo_mobile/data/location_service.dart';
 import 'package:navgo_mobile/core/enums/view_status.dart';
 import 'package:navgo_mobile/core/models/place_model.dart';
+import 'package:navgo_mobile/core/models/route_models.dart';
+import 'package:navgo_mobile/core/utils/route_order.dart';
 import 'package:navgo_mobile/i18n/strings.g.dart';
 import 'package:navgo_mobile/views/plan/repository/service/planner_service.dart';
 
@@ -21,6 +24,7 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
   }
 
   final PlannerService _service;
+  final LocationService _location = LocationService();
 
   FutureOr<void> _onReset(
     PlannerResetEvent event,
@@ -130,11 +134,21 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
         query = area;
       }
 
+      double? originLat;
+      double? originLng;
+      final pos = await _location.currentPosition();
+      if (pos != null) {
+        originLat = pos.latitude;
+        originLng = pos.longitude;
+      }
+
       final places = await _service.searchPlaces(
         token: token,
         area: area,
         query: query,
-        maxResults: maxResults,
+        maxResults: (maxResults * 2).clamp(6, 12),
+        lat: originLat,
+        lng: originLng,
       );
       if (places.length < 2) {
         throw Exception('Yeterli grounded mekan yok');
@@ -160,7 +174,23 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
         ];
       } else {
         selected = places.take(maxResults.clamp(2, places.length)).toList();
-        emit(state.copyWith(statusMessage: t.plan.statusBuildingRoute));
+      }
+      if (originLat != null && originLng != null) {
+        var clustered = compactClusterNearUser(
+          userLat: originLat,
+          userLng: originLng,
+          candidates: selected,
+          maxStops: maxResults.clamp(2, places.length),
+        );
+        if (clustered.length < 2) {
+          clustered = compactClusterNearUser(
+            userLat: originLat,
+            userLng: originLng,
+            candidates: places,
+            maxStops: maxResults.clamp(2, places.length),
+          );
+        }
+        selected = clustered;
       }
 
       emit(
@@ -174,13 +204,20 @@ class PlannerViewModel extends Bloc<PlannerEvent, PlannerState> {
         token: token,
         placeIds: selected.map((p) => p.placeId).toList(),
         travelMode: event.travelMode,
+        originLat: originLat,
+        originLng: originLng,
+        optimizeWaypointOrder: false,
       );
+      final orderedStops = route.waypointOrder.isEmpty
+          ? selected
+          : route.orderedStops(selected);
 
       emit(
         state.copyWith(
           status: ViewStatus.success,
           phase: PlannerPhase.done,
           route: route,
+          stops: orderedStops,
           clearError: true,
           statusMessage: t.plan.statusReady,
         ),

@@ -112,6 +112,9 @@ class LocationService {
     return outcome.result;
   }
 
+  /// Fresh GPS fix shared by planner and route map.
+  Future<Position?> currentPosition() => _readPosition();
+
   Future<LocationResolveOutcome> resolveAreaDetailed() async {
     try {
       final enabled = await ensureServiceEnabled();
@@ -186,13 +189,6 @@ class LocationService {
       debugPrint('LocationService: getCurrentPosition failed: $e');
     }
 
-    try {
-      final last = await Geolocator.getLastKnownPosition();
-      if (last != null) {
-        debugPrint('LocationService: fallback lastKnownPosition');
-        return last;
-      }
-    } catch (_) {}
     return null;
   }
 

@@ -31,10 +31,25 @@ func NewGooglePlacesClient(apiKey string) *GooglePlacesClient {
 	return &GooglePlacesClient{apiKey: apiKey, http: newGoogleHTTPClient()}
 }
 
+type googleCircleCenter struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
+
+type googleCircle struct {
+	Center googleCircleCenter `json:"center"`
+	Radius float64            `json:"radius"`
+}
+
+type googleLocationBias struct {
+	Circle *googleCircle `json:"circle,omitempty"`
+}
+
 type googleTextSearchRequest struct {
-	TextQuery      string `json:"textQuery"`
-	LanguageCode   string `json:"languageCode,omitempty"`
-	MaxResultCount int    `json:"maxResultCount,omitempty"`
+	TextQuery      string              `json:"textQuery"`
+	LanguageCode   string              `json:"languageCode,omitempty"`
+	MaxResultCount int                 `json:"maxResultCount,omitempty"`
+	LocationBias   *googleLocationBias `json:"locationBias,omitempty"`
 }
 
 type googlePlacesSearchResponse struct {
@@ -83,11 +98,24 @@ func (c *GooglePlacesClient) Search(ctx context.Context, req places.SearchReques
 		max = 20
 	}
 
-	body, _ := json.Marshal(googleTextSearchRequest{
+	searchReq := googleTextSearchRequest{
 		TextQuery:      query,
 		LanguageCode:   lang,
 		MaxResultCount: max,
-	})
+	}
+	if req.Lat != 0 || req.Lng != 0 {
+		radius := float64(req.RadiusM)
+		if radius <= 0 {
+			radius = 2500
+		}
+		searchReq.LocationBias = &googleLocationBias{
+			Circle: &googleCircle{
+				Center: googleCircleCenter{Latitude: req.Lat, Longitude: req.Lng},
+				Radius: radius,
+			},
+		}
+	}
+	body, _ := json.Marshal(searchReq)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, placesSearchURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, domainErr.New(domainErr.ErrInternal, "failed to build places request", err)

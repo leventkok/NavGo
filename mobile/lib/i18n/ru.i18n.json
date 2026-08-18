@@ -203,6 +203,30 @@
       }
     }
   },
+  "routeMap": {
+    "openRoute": "Начать маршрут",
+    "endRoute": "Завершить",
+    "youAreHere": "Вы здесь",
+    "currentStop": "Следующая остановка",
+    "currentDestination": "Текущая цель",
+    "completed": "Завершено",
+    "inProgress": "В процессе",
+    "notStarted": "Не начато",
+    "stopsRemaining": "Осталось {count} · {status}",
+    "arrived": "Вы прибыли: {name}",
+    "locationError": "Не удалось получить местоположение. Карта маршрута не запускается.",
+    "routeError": "Не удалось построить маршрут. Попробуйте другой способ передвижения.",
+    "transitHint": "Общественный транспорт",
+    "transitEmpty": "На этом участке нет автобуса. Лучше идти пешком.",
+    "transitWalkTo": "Пешком: {stop}",
+    "transitRide": "{line} · {from} → {to}",
+    "transitWalkDest": "Выйдите и идите к цели",
+    "transitBoard": "Остановка посадки",
+    "modeWalk": "Пешком",
+    "modeTransit": "Транспорт",
+    "modeDrive": "Авто",
+    "modeBike": "Велосипед"
+  },
   "location": {
     "requiredTitle": "Нужно местоположение",
     "failedTitle": "Не удалось определить местоположение",

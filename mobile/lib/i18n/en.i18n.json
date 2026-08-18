@@ -203,6 +203,30 @@
       }
     }
   },
+  "routeMap": {
+    "openRoute": "Start route",
+    "endRoute": "End",
+    "youAreHere": "You are here",
+    "currentStop": "Next stop",
+    "currentDestination": "Current destination",
+    "completed": "Completed",
+    "inProgress": "In progress",
+    "notStarted": "Not started",
+    "stopsRemaining": "{count} stops left · {status}",
+    "arrived": "You arrived at {name}",
+    "locationError": "Couldn’t get location. Route map can’t start.",
+    "routeError": "Couldn’t draw the route. Try another travel mode.",
+    "transitHint": "Public transit",
+    "transitEmpty": "No bus or transit line for this stretch. Walking is better.",
+    "transitWalkTo": "Walk to {stop}",
+    "transitRide": "{line} · {from} → {to}",
+    "transitWalkDest": "Get off, walk to destination",
+    "transitBoard": "Boarding stop",
+    "modeWalk": "Walk",
+    "modeTransit": "Transit",
+    "modeDrive": "Drive",
+    "modeBike": "Bike"
+  },
   "location": {
     "requiredTitle": "Location required",
     "failedTitle": "Couldn’t get location",
