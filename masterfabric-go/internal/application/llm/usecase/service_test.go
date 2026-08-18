@@ -31,6 +31,20 @@ func (s *captureChat) Chat(ctx context.Context, req llm.ChatRequest) (string, er
 	return s.content, s.err
 }
 
+type sequenceChat struct {
+	replies []string
+	idx     int
+}
+
+func (s *sequenceChat) Chat(ctx context.Context, req llm.ChatRequest) (string, error) {
+	if s.idx >= len(s.replies) {
+		return "", errors.New("no more replies")
+	}
+	out := s.replies[s.idx]
+	s.idx++
+	return out, nil
+}
+
 func TestParseIntent_JSON(t *testing.T) {
 	svc := usecase.NewService(stubChat{
 		content: "```json\n{\"area\":\"Kadıköy\",\"query\":\"cafe müze\",\"duration_label\":\"yarım gün\",\"max_stops\":4}\n```",
@@ -45,6 +59,47 @@ func TestParseIntent_JSON(t *testing.T) {
 	}
 	if got.Area != "Kadıköy" || got.Query != "cafe müze" || got.MaxStops != 4 {
 		t.Fatalf("unexpected intent: %+v", got)
+	}
+}
+
+func TestSuggestDayCards_RetriesMalformedJSON(t *testing.T) {
+	good := `{"cards":[
+		{"title":"Şehre yeni misin?","subtitle":"İkonik duraklarla hızlı tur","query":"tarihi yer meydan","icon":"modern","intent":"first_day"},
+		{"title":"Hikâyeyi dinle","subtitle":"Müze ve anıt rotası","query":"müze anıt","icon":"museum","intent":"culture"},
+		{"title":"Ağırdan al","subtitle":"Kahve ve kısa yürüyüş","query":"kahve cafe park","icon":"coffee","intent":"slow"},
+		{"title":"Yerel tat","subtitle":"Esnaf ve sokak lezzeti","query":"lokal yemek pazar","icon":"bazaar","intent":"food"}
+	]}`
+	bad := `{"cards":[
+		{"title":"Şehre yeni misin?","subtitle":"İkonik duraklarla hızlı tur","query":"tarihi yer meydan","icon":"modern","intent":"first_day"),
+		{"title":"Hikâyeyi dinle","subtitle":"Müze ve anıt rotası","query":"müze anıt","icon":"museum","intent":"culture"),
+		{"title":"Ağırdan al","subtitle":"Kahve ve kısa yürüyüş","query":"kahve cafe park","icon":"coffee","intent":"slow"),
+		{"title":"Yerel tat","subtitle":"Esnaf ve sokak lezzeti","query":"lokal yemek pazar","icon":"bazaar","intent":"food")
+	]}`
+	svc := usecase.NewService(&sequenceChat{replies: []string{bad, good}}, "navgo-gemma")
+
+	got, err := svc.SuggestDayCards(context.Background(), dto.SuggestDayCardsRequest{
+		Area:   "Ankara",
+		Locale: "tr",
+	})
+	if err != nil {
+		t.Fatalf("SuggestDayCards: %v", err)
+	}
+	if len(got.Cards) != 4 {
+		t.Fatalf("want 4 cards after retry, got %d", len(got.Cards))
+	}
+}
+
+func TestSuggestDayCards_ReturnsEmptyOnTotalFailure(t *testing.T) {
+	svc := usecase.NewService(stubChat{content: "not json at all"}, "navgo-gemma")
+	got, err := svc.SuggestDayCards(context.Background(), dto.SuggestDayCardsRequest{
+		Area:   "Ankara",
+		Locale: "tr",
+	})
+	if err != nil {
+		t.Fatalf("SuggestDayCards should degrade gracefully: %v", err)
+	}
+	if len(got.Cards) != 0 {
+		t.Fatalf("want empty cards, got %d", len(got.Cards))
 	}
 }
 

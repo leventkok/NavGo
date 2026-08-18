@@ -3,7 +3,9 @@ package usecase
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -298,107 +300,76 @@ func (s *Service) SuggestDayCards(ctx context.Context, req dto.SuggestDayCardsRe
 		fmt.Fprintf(&prefs, "transport_mode=%s\n", m)
 	}
 
-	content, err := s.chat.Chat(ctx, llm.ChatRequest{
-		Temperature: 0.5,
-		MaxTokens:   640,
-		Messages: []llm.Message{
-			{
-				Role: "system",
-				Content: "You are the NavGo travel assistant. Return ONLY valid JSON, no other text. " +
-					"Schema: {\"cards\":[{\"title\":\"string\",\"subtitle\":\"string\",\"query\":\"string\",\"icon\":\"string\",\"intent\":\"string\"}]}. " +
-					"Exactly 4 cards. Write like Spotify playlist recommendations: mood-first title (question or hook) plus a short promise as subtitle. " +
-					"title and subtitle must be in the locale language (tr/en/ru). Do not use generic category labels like Historic center / Waterfront / Museum. " +
-					"intent must be one of: first_day, slow, culture, food, shop, photo, family, evening. Use four different intents. " +
-					"query is a short Places search phrase for that mood in the locale language (no invented place_id). " +
-					"icon must be one of: historic, waterfront, coffee, museum, parks, bazaar, viewpoints, modern. " +
-					"Cards MUST be realistic for the given location ONLY. " +
-					"NEVER mention other cities or regions in title or subtitle (e.g. do not write Mardin, Istanbul, Ortaköy, Kızkalesi when area is Antalya). " +
-					"NEVER suggest waterfront/harbor/coast/beach/marina themes for inland cities (e.g. Ankara, Konya, Nevşehir, Sivas). " +
-					"Only use icon=waterfront when the place actually has a meaningful coastline, harbor, lake shore promenade, or waterfront district. " +
-					"Prefer a mix: first-day highlights, slow/coffee, culture, food/shop, photo, family, or evening when they fit.",
-			},
-			{
-				Role: "user",
-				Content: fmt.Sprintf(
-					"Konum: %s\nPreferences:\n%s\nBu konumda bir günlük gezi için 4 routelist kartı öner. "+
-						"Her kart bir niyet/playlist olsun (ör. şehre yeni misin, yerel tat, ağırdan al). "+
-						"Sahil/liman bu konumda yoksa waterfront kullanma ve liman/sahil kartı yazma.",
-					area,
-					prefs.String(),
-				),
-			},
+	systemPrompt := "You are the NavGo travel assistant. Return ONLY valid JSON, no other text. " +
+		"Schema: {\"cards\":[{\"title\":\"string\",\"subtitle\":\"string\",\"query\":\"string\",\"icon\":\"string\",\"intent\":\"string\"}]}. " +
+		"Exactly 4 cards. Use curly braces { } only — never close objects with ). " +
+		"Write like Spotify playlist recommendations: mood-first title (question or hook) plus a short promise as subtitle. " +
+		"title and subtitle must be in the locale language (tr/en/ru). Do not use generic category labels like Historic center / Waterfront / Museum. " +
+		"intent must be one of: first_day, slow, culture, food, shop, photo, family, evening. Use four different intents. " +
+		"query is a short Places search phrase for that mood in the locale language (no invented place_id). " +
+		"icon must be one of: historic, waterfront, coffee, museum, parks, bazaar, viewpoints, modern. " +
+		"Cards MUST be realistic for the given location ONLY. " +
+		"NEVER mention other cities or regions in title or subtitle (e.g. do not write Mardin, Istanbul, Ortaköy, Kızkalesi when area is Antalya). " +
+		"NEVER suggest waterfront/harbor/coast/beach/marina themes for inland cities (e.g. Ankara, Konya, Nevşehir, Sivas). " +
+		"Only use icon=waterfront when the place actually has a meaningful coastline, harbor, lake shore promenade, or waterfront district. " +
+		"Prefer a mix: first-day highlights, slow/coffee, culture, food/shop, photo, family, or evening when they fit."
+	userContent := fmt.Sprintf(
+		"Konum: %s\nPreferences:\n%s\nBu konumda bir günlük gezi için 4 routelist kartı öner. "+
+			"Her kart bir niyet/playlist olsun (ör. şehre yeni misin, yerel tat, ağırdan al). "+
+			"Sahil/liman bu konumda yoksa waterfront kullanma ve liman/sahil kartı yazma.",
+		area,
+		prefs.String(),
+	)
+
+	attempts := []struct {
+		temperature float64
+		userSuffix  string
+	}{
+		{temperature: 0.3},
+		{
+			temperature: 0,
+			userSuffix:  "Return ONLY one valid JSON object. Use { and } for objects, never ). No markdown.",
 		},
-	})
-	if err != nil {
-		return nil, err
+		{
+			temperature: 0,
+			userSuffix:  "Fix JSON syntax. Output exactly {\"cards\":[...]} with 4 items.",
+		},
 	}
 
-	raw, err := extractJSONObject(content)
-	if err != nil {
-		return nil, domainErr.New(domainErr.ErrInternal, "LLM did not return JSON", err)
-	}
-
-	var parsed struct {
-		Cards []struct {
-			Title    string `json:"title"`
-			Subtitle string `json:"subtitle"`
-			Query    string `json:"query"`
-			Icon     string `json:"icon"`
-			Intent   string `json:"intent"`
-		} `json:"cards"`
-	}
-	if err := json.Unmarshal(raw, &parsed); err != nil {
-		return nil, domainErr.New(domainErr.ErrInternal, "failed to parse day cards JSON", err)
-	}
-
-	cards := make([]dto.DayCardSuggestion, 0, 4)
-	seenIntent := map[string]struct{}{}
-	for _, c := range parsed.Cards {
-		title := strings.TrimSpace(c.Title)
-		subtitle := strings.TrimSpace(c.Subtitle)
-		query := strings.TrimSpace(c.Query)
-		icon := strings.ToLower(strings.TrimSpace(c.Icon))
-		intent := strings.ToLower(strings.TrimSpace(c.Intent))
-		if title == "" || query == "" {
-			continue
+	var lastChatErr error
+	for _, attempt := range attempts {
+		userMsg := userContent
+		if attempt.userSuffix != "" {
+			userMsg = userContent + "\n\n" + attempt.userSuffix
 		}
-		if cardConflictsWithArea(title, subtitle, query, area) {
-			continue
-		}
-		if _, ok := allowedDayCardIntents[intent]; !ok {
-			if _, ok := allowedDayCardIcons[icon]; ok {
-				intent = intentForIcon(icon)
-			} else {
-				intent = "first_day"
-			}
-		}
-		if _, dup := seenIntent[intent]; dup {
-			continue
-		}
-		if _, ok := allowedDayCardIcons[icon]; !ok {
-			icon = iconForIntent(intent)
-		}
-		if subtitle == "" {
-			subtitle = query
-		}
-		seenIntent[intent] = struct{}{}
-		cards = append(cards, dto.DayCardSuggestion{
-			Title:    title,
-			Subtitle: subtitle,
-			Query:    query,
-			Icon:     icon,
-			Intent:   intent,
-			Area:     area,
+		content, err := s.chat.Chat(ctx, llm.ChatRequest{
+			Temperature: attempt.temperature,
+			MaxTokens:   640,
+			Messages: []llm.Message{
+				{Role: "system", Content: systemPrompt},
+				{Role: "user", Content: userMsg},
+			},
 		})
-		if len(cards) >= 4 {
-			break
+		if err != nil {
+			lastChatErr = err
+			continue
 		}
-	}
-	if len(cards) == 0 {
-		return nil, domainErr.New(domainErr.ErrInternal, "LLM returned too few day cards", nil)
+
+		rawCards, err := parseDayCardsRaw(content)
+		if err != nil {
+			continue
+		}
+		cards, err := filterDayCards(rawCards, area)
+		if err != nil || len(cards) == 0 {
+			continue
+		}
+		return &dto.SuggestDayCardsResponse{Cards: cards, Model: s.model}, nil
 	}
 
-	return &dto.SuggestDayCardsResponse{Cards: cards, Model: s.model}, nil
+	if lastChatErr != nil && errors.Is(lastChatErr, domainErr.ErrUnavailable) {
+		return nil, lastChatErr
+	}
+	return &dto.SuggestDayCardsResponse{Cards: []dto.DayCardSuggestion{}, Model: s.model}, nil
 }
 
 // SuggestRouteCard returns exactly one routelist card for a chat prompt (or an edit of a previous card).
@@ -895,6 +866,107 @@ func fallbackIndices(n, maxStops int) []int {
 		out = append(out, i)
 	}
 	return out
+}
+
+type rawDayCard struct {
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
+	Query    string `json:"query"`
+	Icon     string `json:"icon"`
+	Intent   string `json:"intent"`
+}
+
+var (
+	trailingCommaRE        = regexp.MustCompile(`,\s*([}\]])`)
+	closeParenAfterStringRE = regexp.MustCompile(`"(\s*)\)`)
+)
+
+func parseDayCardsRaw(content string) ([]rawDayCard, error) {
+	raw, err := extractJSONObject(content)
+	if err != nil {
+		return nil, err
+	}
+	raw = repairLLMJSON(raw)
+
+	var parsed struct {
+		Cards []rawDayCard `json:"cards"`
+	}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		raw = repairLLMJSONAggressive(raw)
+		if err := json.Unmarshal(raw, &parsed); err != nil {
+			return nil, err
+		}
+	}
+	return parsed.Cards, nil
+}
+
+func filterDayCards(rawCards []rawDayCard, area string) ([]dto.DayCardSuggestion, error) {
+	cards := make([]dto.DayCardSuggestion, 0, 4)
+	seenIntent := map[string]struct{}{}
+	for _, c := range rawCards {
+		title := strings.TrimSpace(c.Title)
+		subtitle := strings.TrimSpace(c.Subtitle)
+		query := strings.TrimSpace(c.Query)
+		icon := strings.ToLower(strings.TrimSpace(c.Icon))
+		intent := strings.ToLower(strings.TrimSpace(c.Intent))
+		if title == "" || query == "" {
+			continue
+		}
+		if cardConflictsWithArea(title, subtitle, query, area) {
+			continue
+		}
+		if _, ok := allowedDayCardIntents[intent]; !ok {
+			if _, ok := allowedDayCardIcons[icon]; ok {
+				intent = intentForIcon(icon)
+			} else {
+				intent = "first_day"
+			}
+		}
+		if _, dup := seenIntent[intent]; dup {
+			continue
+		}
+		if _, ok := allowedDayCardIcons[icon]; !ok {
+			icon = iconForIntent(intent)
+		}
+		if subtitle == "" {
+			subtitle = query
+		}
+		seenIntent[intent] = struct{}{}
+		cards = append(cards, dto.DayCardSuggestion{
+			Title:    title,
+			Subtitle: subtitle,
+			Query:    query,
+			Icon:     icon,
+			Intent:   intent,
+			Area:     area,
+		})
+		if len(cards) >= 4 {
+			break
+		}
+	}
+	if len(cards) == 0 {
+		return nil, fmt.Errorf("no usable day cards")
+	}
+	return cards, nil
+}
+
+func repairLLMJSON(raw []byte) []byte {
+	s := string(raw)
+	for {
+		next := trailingCommaRE.ReplaceAllString(s, "$1")
+		if next == s {
+			break
+		}
+		s = next
+	}
+	s = closeParenAfterStringRE.ReplaceAllString(s, "\"}")
+	return []byte(s)
+}
+
+func repairLLMJSONAggressive(raw []byte) []byte {
+	s := string(repairLLMJSON(raw))
+	s = strings.ReplaceAll(s, `'`, `"`)
+	return []byte(s)
 }
 
 func extractJSONObject(text string) ([]byte, error) {
